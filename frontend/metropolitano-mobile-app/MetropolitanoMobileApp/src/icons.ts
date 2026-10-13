@@ -1,0 +1,19 @@
+// Import individual public icon modules to keep Metro's dependency graph small.
+export { default as Bell } from 'lucide-react-native/icons/bell';
+export { default as Bus } from 'lucide-react-native/icons/bus';
+export { default as ChevronLeft } from 'lucide-react-native/icons/chevron-left';
+export { default as ChevronRight } from 'lucide-react-native/icons/chevron-right';
+export { default as CircleCheck } from 'lucide-react-native/icons/circle-check';
+export { default as CircleHelp } from 'lucide-react-native/icons/circle-question-mark';
+export { default as Clock } from 'lucide-react-native/icons/clock';
+export { default as CreditCard } from 'lucide-react-native/icons/credit-card';
+export { default as House } from 'lucide-react-native/icons/house';
+export { default as LockKeyhole } from 'lucide-react-native/icons/lock-keyhole';
+export { default as LogOut } from 'lucide-react-native/icons/log-out';
+export { default as Route } from 'lucide-react-native/icons/route';
+export { default as ShieldCheck } from 'lucide-react-native/icons/shield-check';
+export { default as TriangleAlert } from 'lucide-react-native/icons/triangle-alert';
+export { default as UserRound } from 'lucide-react-native/icons/user-round';
+export { default as Wallet } from 'lucide-react-native/icons/wallet';
+export { default as X } from 'lucide-react-native/icons/x';
+export { default as MapPin } from 'lucide-react-native/icons/map-pin';

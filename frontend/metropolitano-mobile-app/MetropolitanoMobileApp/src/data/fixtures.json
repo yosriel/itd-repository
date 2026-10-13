@@ -1,0 +1,249 @@
+{
+  "saldo": 12.5,
+  "montoSeleccionado": null,
+  "metodoSeleccionado": null,
+  "alertsUnread": 2,
+  "gpsGranted": false,
+  "historial": [
+    {
+      "tipo": "Viaje",
+      "desc": "Naranjal → Estación Central",
+      "monto": -2.5,
+      "fecha": "Hoy, 07:04 a.m."
+    },
+    {
+      "tipo": "Recarga",
+      "desc": "Recarga vía Yape",
+      "monto": 10,
+      "fecha": "Ayer, 08:12 p.m."
+    },
+    {
+      "tipo": "Viaje",
+      "desc": "Central → Naranjal",
+      "monto": -2.5,
+      "fecha": "Ayer, 06:41 p.m."
+    }
+  ],
+  "stations": [
+    {
+      "name": "Naranjal",
+      "sub": "Terminal Norte",
+      "status": "green",
+      "label": "En camino · 4 min"
+    },
+    {
+      "name": "Izaguirre",
+      "sub": "Independencia",
+      "status": "green",
+      "label": "En camino · 5 min"
+    },
+    {
+      "name": "Los Jazmines",
+      "sub": "Comas",
+      "status": "green",
+      "label": "En camino · 6 min"
+    },
+    {
+      "name": "Honorio Delgado",
+      "sub": "Los Olivos",
+      "status": "amber",
+      "label": "Demora · 12 min"
+    },
+    {
+      "name": "Tomás Valle",
+      "sub": "Independencia",
+      "status": "red",
+      "label": "Vía bloqueada"
+    },
+    {
+      "name": "Caquetá",
+      "sub": "Cercado de Lima",
+      "status": "amber",
+      "label": "Demora · 10 min"
+    },
+    {
+      "name": "Estación Central",
+      "sub": "Cercado de Lima",
+      "status": "green",
+      "label": "En camino · 3 min"
+    },
+    {
+      "name": "Angamos",
+      "sub": "Surquillo",
+      "status": "green",
+      "label": "En camino · 7 min"
+    }
+  ],
+  "alerts": [
+    {
+      "level": "red",
+      "title": "Bloqueo temporal en Tomás Valle",
+      "body": "Vía obstruida en el carril exclusivo. Tu ruta puede demorar hasta 15 min adicionales.",
+      "time": "Hace 2 min"
+    },
+    {
+      "level": "amber",
+      "title": "Congestión cerca de Caquetá",
+      "body": "Tráfico en Av. Universitaria está afectando al Expreso 1. Demora estimada: 10 min.",
+      "time": "Hace 9 min"
+    },
+    {
+      "level": "green",
+      "title": "Tu bus está llegando",
+      "body": "El Expreso 1 llega a Naranjal en 2 minutos.",
+      "time": "Hace 14 min"
+    }
+  ],
+  "rutas": {
+    "izaguirre": {
+      "destinoNombre": "Estación Izaguirre",
+      "tiempo": "6 min",
+      "transbordos": 0,
+      "linea": "Regular A",
+      "paradas": [
+        "Naranjal",
+        "Izaguirre"
+      ]
+    },
+    "independencia": {
+      "destinoNombre": "Estación Independencia",
+      "tiempo": "14 min",
+      "transbordos": 0,
+      "linea": "Regular A",
+      "paradas": [
+        "Naranjal",
+        "Izaguirre",
+        "Pacífico",
+        "Independencia"
+      ]
+    },
+    "tomasvalle": {
+      "destinoNombre": "Estación Tomás Valle",
+      "tiempo": "19 min",
+      "transbordos": 0,
+      "linea": "Regular A",
+      "paradas": [
+        "Naranjal",
+        "Izaguirre",
+        "Independencia",
+        "Los Jazmines",
+        "Tomás Valle"
+      ]
+    },
+    "honoriodelgado": {
+      "destinoNombre": "Estación Honorio Delgado",
+      "tiempo": "22 min",
+      "transbordos": 0,
+      "linea": "Expreso 1",
+      "paradas": [
+        "Naranjal",
+        "Los Jazmines",
+        "Tomás Valle",
+        "Honorio Delgado"
+      ]
+    },
+    "caqueta": {
+      "destinoNombre": "Estación Caquetá",
+      "tiempo": "27 min",
+      "transbordos": 0,
+      "linea": "Regular A",
+      "paradas": [
+        "Naranjal",
+        "Honorio Delgado",
+        "UNI",
+        "Parque del Trabajo",
+        "Caquetá"
+      ]
+    },
+    "ramoncastilla": {
+      "destinoNombre": "Estación Ramón Castilla",
+      "tiempo": "29 min",
+      "transbordos": 0,
+      "linea": "Regular A",
+      "paradas": [
+        "Naranjal",
+        "Honorio Delgado",
+        "Caquetá",
+        "Ramón Castilla"
+      ]
+    },
+    "central": {
+      "destinoNombre": "Estación Central",
+      "tiempo": "32 min",
+      "transbordos": 0,
+      "linea": "Expreso 1",
+      "paradas": [
+        "Naranjal",
+        "Honorio Delgado",
+        "Caquetá",
+        "Ramón Castilla",
+        "Estación Central"
+      ]
+    },
+    "canada": {
+      "destinoNombre": "Estación Canadá",
+      "tiempo": "36 min",
+      "transbordos": 0,
+      "linea": "Regular B",
+      "paradas": [
+        "Naranjal",
+        "Honorio Delgado",
+        "Estación Central",
+        "Canadá"
+      ]
+    },
+    "aramburu": {
+      "destinoNombre": "Estación Aramburú",
+      "tiempo": "40 min",
+      "transbordos": 1,
+      "linea": "Expreso 1 → Regular C",
+      "paradas": [
+        "Naranjal",
+        "Los Jazmines",
+        "Honorio Delgado",
+        "Estación Central",
+        "Canadá",
+        "Aramburú"
+      ]
+    },
+    "angamos": {
+      "destinoNombre": "Estación Angamos",
+      "tiempo": "46 min",
+      "transbordos": 1,
+      "linea": "Expreso 1 → Regular B",
+      "paradas": [
+        "Naranjal",
+        "Honorio Delgado",
+        "Estación Central",
+        "Aramburú",
+        "Angamos"
+      ]
+    },
+    "ricardopalma": {
+      "destinoNombre": "Estación Ricardo Palma",
+      "tiempo": "50 min",
+      "transbordos": 1,
+      "linea": "Expreso 1 → Regular B",
+      "paradas": [
+        "Naranjal",
+        "Honorio Delgado",
+        "Estación Central",
+        "Angamos",
+        "Ricardo Palma"
+      ]
+    },
+    "matellini": {
+      "destinoNombre": "Terminal Matellini",
+      "tiempo": "58 min",
+      "transbordos": 0,
+      "linea": "Expreso 2",
+      "paradas": [
+        "Naranjal",
+        "Estación Central",
+        "Angamos",
+        "Ricardo Palma",
+        "Matellini"
+      ]
+    }
+  }
+}
