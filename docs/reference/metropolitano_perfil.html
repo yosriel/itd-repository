@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Metropolitano Lima App — Prototipo interactivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Identidad real vigente del Metropolitano/ATU desde el rediseño de 2019 (azul + turquesa) */
+    --navy:#0B3552;
+    --navy-2:#0F435F;
+    --steel:#00897E;
+    /* Rojo real de las unidades articuladas (el corredor es popularmente conocido como "Corredor Rojo") */
+    --bus-red:#D2232A;
+    --amber:#F5A623;
+    --green:#1FA971;
+    --critical:#D6483C;
+    --ink:#14202B;
+    --muted:#5B6B7A;
+    --line:#E4E9EE;
+    --bg:#F4F6F8;
+    --card:#FFFFFF;
+    --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Manrope',-apple-system,Segoe UI,Roboto,sans-serif;
+    background:linear-gradient(160deg,#0E1B2E 0%,#1B3252 45%,#2E6F95 100%);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:32px 16px 60px;
+    color:var(--ink);
+  }
+  .stage-header{
+    color:#EAF1F7;
+    text-align:center;
+    max-width:640px;
+    margin-bottom:22px;
+  }
+  .stage-header .eyebrow{
+    font-size:13px;
+    letter-spacing:.02em;
+    color:var(--amber);
+    font-weight:700;
+    margin-bottom:8px;
+  }
+  .stage-header h1{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:28px;
+    margin:0 0 8px;
+  }
+  .stage-header p{
+    font-size:14px;
+    line-height:1.5;
+    color:#C7D5E2;
+    margin:0;
+  }
+  .stage-header .note{
+    display:inline-block;
+    margin-top:12px;
+    font-size:12px;
+    color:#9FB3C4;
+    border:1px solid rgba(255,255,255,.18);
+    border-radius:999px;
+    padding:6px 14px;
+    background:rgba(255,255,255,.05);
+  }
+
+  .layout{
+    display:flex;
+    gap:28px;
+    align-items:flex-start;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+
+  /* ---- Phone frame ---- */
+  .phone{
+    width:375px;
+    height:780px;
+    background:#000;
+    border-radius:46px;
+    padding:14px;
+    box-shadow:0 30px 60px rgba(0,0,0,.45), 0 0 0 2px rgba(255,255,255,.06);
+    position:relative;
+    flex-shrink:0;
+  }
+  .screen{
+    width:100%;
+    height:100%;
+    background:var(--bg);
+    border-radius:34px;
+    overflow:hidden;
+    position:relative;
+    display:flex;
+    flex-direction:column;
+  }
+  .notch{
+    position:absolute;
+    top:14px;left:50%;transform:translateX(-50%);
+    width:120px;height:22px;
+    background:#000;
+    border-radius:14px;
+    z-index:50;
+  }
+  .statusbar{
+    height:40px;
+    flex-shrink:0;
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    padding:0 24px 6px;
+    font-size:12px;
+    font-weight:700;
+    color:var(--ink);
+  }
+  .view{
+    flex:1;
+    overflow-y:auto;
+    display:none;
+    flex-direction:column;
+    -ms-overflow-style:none;
+    scrollbar-width:none;
+  }
+  .view::-webkit-scrollbar{display:none;}
+  .view.active{display:flex;}
+
+  /* ---- bottom nav ---- */
+  .bottomnav{
+    flex-shrink:0;
+    display:flex;
+    justify-content:space-around;
+    align-items:center;
+    padding:10px 6px 16px;
+    background:var(--card);
+    border-top:1px solid var(--line);
+  }
+  .navbtn{
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    font-size:10.5px;font-weight:700;color:var(--muted);
+    background:none;border:none;cursor:pointer;position:relative;
+    padding:4px 10px;
+    font-family:inherit;
+  }
+  .navbtn.active{color:var(--steel);}
+  .navbtn .dot{width:20px;height:20px;display:flex;align-items:center;justify-content:center;}
+  .navbtn .badge{
+    position:absolute;top:-2px;right:2px;
+    background:var(--critical);color:#fff;
+    font-size:9px;font-weight:800;
+    min-width:15px;height:15px;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;
+    padding:0 3px;
+  }
+
+  /* ---- generic bits ---- */
+  .px{padding-left:20px;padding-right:20px;}
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px;
+  }
+  .btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    background:var(--navy);
+    color:#fff;
+    font-family:inherit;font-weight:700;font-size:14.5px;
+    border:none;border-radius:14px;
+    padding:15px;
+    cursor:pointer;
+    width:100%;
+  }
+  .btn:active{transform:scale(.98);}
+  .btn.amber{background:var(--amber);color:#3A2600;}
+  .btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line);}
+  .pill{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:11.5px;font-weight:700;
+    padding:5px 10px;border-radius:999px;
+  }
+  .pill.green{background:#E4F7EE;color:var(--green);}
+  .pill.amber{background:#FDF1DC;color:#8A5A0B;}
+  .pill.red{background:#FBE7E5;color:var(--critical);}
+  input[type=text], input[type=tel]{
+    width:100%;
+    font-family:inherit;
+    border:1.5px solid var(--line);
+    background:#fff;
+    border-radius:12px;
+    padding:13px 14px;
+    font-size:14px;
+    outline:none;
+  }
+  input:focus{border-color:var(--steel);}
+  h2.title{font-family:'Fraunces',serif;font-size:21px;margin:0 0 4px;color:var(--navy);}
+  .sub{font-size:12.5px;color:var(--muted);margin:0;}
+
+  /* ---- toast ---- */
+  .toast{
+    position:absolute;left:16px;right:16px;bottom:96px;
+    background:var(--navy);color:#fff;
+    border-radius:14px;padding:13px 16px;
+    font-size:13px;font-weight:600;
+    display:flex;align-items:center;gap:10px;
+    box-shadow:0 12px 24px rgba(0,0,0,.25);
+    transform:translateY(20px);opacity:0;
+    transition:all .25s ease;
+    pointer-events:none;
+    z-index:80;
+  }
+  .toast.show{transform:translateY(0);opacity:1;}
+
+  /* ---- overlay/modal ---- */
+  .overlay{
+    position:absolute;inset:0;
+    background:rgba(10,16,26,.55);
+    display:none;
+    align-items:flex-end;
+    z-index:60;
+  }
+  .overlay.show{display:flex;}
+  .sheet{
+    background:#fff;
+    width:100%;
+    border-radius:24px 24px 0 0;
+    padding:22px 20px 26px;
+    animation:sheetup .25s ease;
+  }
+  @keyframes sheetup{from{transform:translateY(30px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  .modal-center{
+    position:absolute;inset:0;
+    background:rgba(10,16,26,.55);
+    display:none;
+    align-items:center;justify-content:center;
+    z-index:60;
+    padding:30px;
+  }
+  .modal-center.show{display:flex;}
+  .modal-card{
+    background:#fff;border-radius:20px;padding:26px 22px;text-align:center;
+    animation:sheetup .25s ease;
+  }
+
+  /* utility */
+  .row{display:flex;align-items:center;justify-content:space-between;}
+  .flex-gap{display:flex;align-items:center;gap:10px;}
+  .icon-circle{
+    width:38px;height:38px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .switch{
+    width:44px;height:26px;border-radius:14px;background:var(--line);
+    position:relative;cursor:pointer;flex-shrink:0;transition:background .2s;
+  }
+  .switch::after{
+    content:'';position:absolute;top:3px;left:3px;
+    width:20px;height:20px;border-radius:50%;background:#fff;
+    box-shadow:0 1px 3px rgba(0,0,0,.3);
+    transition:left .2s;
+  }
+  .switch.on{background:var(--green);}
+  .switch.on::after{left:21px;}
+  .dotstat{display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;margin-right:5px;vertical-align:1px;}
+
+  .credits{
+    color:#9FB3C4;font-size:12px;text-align:center;margin-top:26px;max-width:640px;
+  }
+  .credits a{color:#C7D5E2;}
+
+  .profile-avatar{width:76px;height:76px;border-radius:50%;background:var(--steel);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;box-shadow:0 6px 16px rgba(0,137,126,.18);}
+  .profile-section{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:14px;}
+  .profile-item{width:100%;display:flex;align-items:center;gap:12px;padding:14px 15px;background:#fff;border:0;border-bottom:1px solid var(--line);font-family:inherit;text-align:left;cursor:pointer;color:var(--ink);}
+  .profile-item:last-child{border-bottom:0;}
+  .profile-item:hover{background:#F8FAFB;}
+  .profile-icon{width:34px;height:34px;border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--navy);flex-shrink:0;}
+  .profile-item strong{display:block;font-size:13px;margin-bottom:2px;}
+  .profile-item small{display:block;font-size:11.5px;color:var(--muted);}
+  .profile-chevron{margin-left:auto;color:#9AA5AE;font-size:18px;}
+  .profile-edit{display:none;}
+  .profile-edit.show{display:block;}
+  .profile-read.hide{display:none;}
+  .field-label{display:block;font-size:11.5px;font-weight:800;color:var(--muted);margin:0 0 6px;}
+  .profile-form input{margin-bottom:12px;}
+</style>
+</head>
+<body>
+
+<div class="stage-header">
+  <div class="eyebrow">AVANCE DE PROYECTO 1 · PROTOTIPO NAVEGABLE</div>
+  <h1>Metropolitano Lima App</h1>
+  <p>Prototipo funcional del MVP: recorre las 7 pantallas con la navegación inferior. La recarga de saldo y las alertas funcionan en vivo con datos simulados.</p>
+  <div class="note">Logo oficial y fotografías reales de las unidades vía Wikimedia Commons (uso libre) · Paleta basada en la identidad azul/turquesa vigente desde el rediseño de 2019 y el rojo real de los buses articulados ("Corredor Rojo")</div>
+</div>
+
+<div class="layout">
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="screen">
+
+      <!-- ============ SPLASH (logo oficial real + foto real del bus articulado) ============ -->
+      <div class="view active" id="view-splash" style="justify-content:flex-end;align-items:center;text-align:center;background:#0B3552;position:relative;overflow:hidden;">
+        <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Metropolitano%2C%20Lima%2C%20Peru.%20(42878965511).jpg"
+             alt="Bus articulado real del Metropolitano de Lima"
+             onerror="this.style.display='none';"
+             style="position:absolute;inset:0;width:100%;height:62%;object-fit:cover;filter:saturate(1.05);">
+        <div style="position:absolute;inset:0;height:62%;background:linear-gradient(180deg,rgba(11,53,82,.15) 0%,rgba(11,53,82,.95) 92%);"></div>
+        <div class="px" style="width:100%;position:relative;z-index:2;padding-bottom:52px;">
+          <div style="width:104px;height:104px;background:#fff;border-radius:24px;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;padding:14px;box-shadow:0 14px 30px rgba(0,0,0,.35);" id="splash-logo-box">
+            <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Metropolitano_Lima_logo.svg" alt="Logotipo oficial del Metropolitano de Lima" style="width:100%;height:100%;object-fit:contain;" onerror="fallbackLogo(this)">
+          </div>
+          <h1 style="font-family:'Fraunces',serif;color:#fff;font-size:27px;margin:0 0 10px;">Metropolitano<br>Lima App</h1>
+          <p style="color:#C7D5E2;font-size:14.5px;line-height:1.5;margin:0 0 34px;">Tu ruta, en tiempo real.</p>
+          <button class="btn" style="background:var(--bus-red);" id="btn-splash-continue">Pulsa para continuar</button>
+          <p style="color:#7E93A4;font-size:10.5px;margin-top:14px;">Foto: Metropolitano, Lima, Peru — Wikimedia Commons (CC)</p>
+        </div>
+      </div>
+
+      <!-- ============ LOGIN (fixes: missing "inicio de sesión") ============ -->
+      <div class="view" id="view-login" style="justify-content:center;background:#fff;">
+        <div class="px" style="width:100%;">
+          <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Metropolitano_Lima_logo_con_letras.svg" alt="Logotipo oficial del Metropolitano de Lima" style="height:64px;display:block;margin:0 auto 26px;" onerror="this.style.display='none'">
+          <h2 class="title">Inicia sesión</h2>
+          <p class="sub" style="margin-bottom:26px;">Ingresa con el mismo número asociado a tu tarjeta del Metropolitano.</p>
+          <label style="font-size:12.5px;font-weight:700;color:var(--muted);">Número de celular</label>
+          <div style="margin:8px 0 14px;">
+            <input type="tel" id="login-phone" placeholder="987 654 321" maxlength="9">
+          </div>
+          <label style="font-size:12.5px;font-weight:700;color:var(--muted);">DNI</label>
+          <div style="margin:8px 0 22px;">
+            <input type="text" id="login-dni" placeholder="76543210" maxlength="8">
+          </div>
+          <button class="btn" id="btn-login">Ingresar</button>
+          <p id="login-error" style="color:var(--critical);font-size:12.5px;text-align:center;margin-top:12px;display:none;">Completa ambos campos para continuar.</p>
+          <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:24px;">¿Primera vez aquí? <b style="color:var(--steel);">Crear cuenta</b></p>
+        </div>
+      </div>
+
+      <!-- ============ HOME (fixes: buscador de paraderos + estado de estaciones cercanas) ============ -->
+      <div class="view" id="view-home">
+        <div class="px" style="padding-top:18px;padding-bottom:14px;background:#fff;border-bottom:1px solid var(--line);">
+          <div class="row" style="margin-bottom:16px;">
+            <div>
+              <p class="sub" style="margin-bottom:2px;">Buenos días</p>
+              <h2 style="font-family:'Fraunces',serif;font-size:19px;margin:0;color:var(--navy);">Juan Carlos</h2>
+            </div>
+            <button id="btn-open-alerts-bell" style="position:relative;background:var(--bg);border:none;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9Z" stroke="#13233B" stroke-width="1.8" stroke-linejoin="round"/><path d="M13.7 21a2 2 0 0 1-3.4 0" stroke="#13233B" stroke-width="1.8"/></svg>
+              <span class="badge" id="home-alert-badge" style="top:-2px;right:-2px;">2</span>
+            </button>
+          </div>
+          <div id="home-search-wrap" style="position:relative;">
+            <input type="text" id="home-search" placeholder="Buscar estación o paradero...">
+          </div>
+        </div>
+
+        <div class="px" style="padding-top:16px;">
+          <div id="gps-tag" class="flex-gap" style="margin-bottom:16px;display:none;">
+            <span class="pill green"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" style="vertical-align:-2px;margin-right:3px;"><path d="M12 22s7-7.58 7-12.5A7 7 0 0 0 5 9.5C5 14.42 12 22 12 22Z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="9.5" r="2.3" stroke="currentColor" stroke-width="2"/></svg>Estación más cercana: Naranjal (3 min caminando)</span>
+          </div>
+
+          <div class="row" style="margin-bottom:10px;">
+            <b style="font-size:13.5px;color:var(--navy);">Estaciones cercanas</b>
+          </div>
+          <div id="stations-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:22px;"></div>
+
+          <div class="row" style="margin-bottom:10px;">
+            <b style="font-size:13.5px;color:var(--navy);">Tus rutas frecuentes</b>
+          </div>
+          <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;">
+            <div class="card" style="min-width:150px;flex-shrink:0;padding:0;overflow:hidden;">
+              <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Bus%20articulado%20en%20Lima.jpg" alt="Bus articulado real del Metropolitano" style="width:100%;height:72px;object-fit:cover;display:block;" onerror="this.style.display='none'">
+              <div style="padding:10px 12px;">
+                <p style="font-size:11.5px;color:var(--muted);margin:0 0 3px;">Naranjal → Central</p>
+                <p style="font-weight:800;font-size:13.5px;margin:0 0 6px;color:var(--navy);">Expreso 1</p>
+                <span class="pill green"><span class="dotstat"></span>4 min</span>
+              </div>
+            </div>
+            <div class="card" style="min-width:150px;flex-shrink:0;padding:0;overflow:hidden;">
+              <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Iron%20Bus%20Corredor%20Rojo.jpg" alt="Bus del Corredor Rojo del Metropolitano" style="width:100%;height:72px;object-fit:cover;display:block;" onerror="this.style.display='none'">
+              <div style="padding:10px 12px;">
+                <p style="font-size:11.5px;color:var(--muted);margin:0 0 3px;">Central → Matellini</p>
+                <p style="font-weight:800;font-size:13.5px;margin:0 0 6px;color:var(--navy);">Regular B</p>
+                <span class="pill amber"><span class="dotstat"></span>11 min</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ RUTAS: permiso GPS + planeador ============ -->
+      <div class="view" id="view-rutas">
+        <div class="px" style="padding-top:18px;padding-bottom:12px;background:#fff;border-bottom:1px solid var(--line);">
+          <h2 class="title">Planea tu ruta</h2>
+          <p class="sub">Solo estaciones y líneas oficiales del Metropolitano.</p>
+        </div>
+        <div class="px" style="padding-top:16px;">
+          <label style="font-size:12px;font-weight:700;color:var(--muted);">Tu ubicación</label>
+          <div style="margin:6px 0 12px;"><input type="text" id="ruta-origen" value="Estación Naranjal" readonly></div>
+          <label style="font-size:12px;font-weight:700;color:var(--muted);">¿A dónde vas?</label>
+          <div style="margin:6px 0 16px;">
+            <select id="ruta-destino" style="width:100%;font-family:inherit;border:1.5px solid var(--line);border-radius:12px;padding:13px 14px;font-size:14px;background:#fff;">
+              <option value="">Selecciona una estación</option>
+              <optgroup label="Tramo Norte">
+                <option value="izaguirre">Estación Izaguirre (Independencia)</option>
+                <option value="independencia">Estación Independencia</option>
+                <option value="tomasvalle">Estación Tomás Valle (Independencia)</option>
+              </optgroup>
+              <optgroup label="Tramo Centro">
+                <option value="honoriodelgado">Estación Honorio Delgado (S.M.P.)</option>
+                <option value="caqueta">Estación Caquetá (Cercado de Lima)</option>
+                <option value="ramoncastilla">Estación Ramón Castilla (Cercado de Lima)</option>
+                <option value="central">Estación Central (Cercado de Lima)</option>
+              </optgroup>
+              <optgroup label="Tramo Sur">
+                <option value="canada">Estación Canadá (La Victoria)</option>
+                <option value="aramburu">Estación Aramburú (San Isidro)</option>
+                <option value="angamos">Estación Angamos (Surquillo)</option>
+                <option value="ricardopalma">Estación Ricardo Palma (Miraflores)</option>
+                <option value="matellini">Terminal Matellini (Chorrillos)</option>
+              </optgroup>
+            </select>
+          </div>
+          <button class="btn" id="btn-buscar-ruta">Buscar ruta</button>
+
+          <div id="ruta-resultado" style="margin-top:20px;display:none;">
+            <p style="font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:10px;">1 opción encontrada</p>
+            <div class="card" id="ruta-card" style="margin-bottom:14px;"></div>
+            <button class="btn amber" id="btn-ver-ruta">Ver ruta trazada</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ DETALLE DE RUTA / ETA ============ -->
+      <div class="view" id="view-detalle">
+        <div class="px" style="padding-top:18px;padding-bottom:14px;background:var(--navy);color:#fff;">
+          <button id="btn-back-detalle" style="background:none;border:none;color:#C7D5E2;font-size:12px;font-weight:700;cursor:pointer;padding:0;margin-bottom:10px;">← Volver</button>
+          <p style="font-size:13px;color:#C7D5E2;margin:0 0 4px;" id="detalle-titulo">Naranjal → Aramburú</p>
+          <div class="row">
+            <span style="font-size:22px;font-weight:800;" id="detalle-tiempo">32 min</span>
+            <span class="pill amber" id="detalle-transbordo">1 trasbordo</span>
+          </div>
+        </div>
+        <div class="px" style="padding-top:18px;flex:1;">
+          <div class="row" style="margin-bottom:14px;">
+            <b style="font-size:13px;color:var(--navy);">Próxima parada</b>
+            <span class="pill green" id="eta-live">Bus llega en <b id="eta-count">3:00</b></span>
+          </div>
+          <div id="timeline" style="position:relative;padding-left:22px;"></div>
+          <button class="btn" id="btn-iniciar-viaje" style="margin-top:10px;">Iniciar viaje</button>
+        </div>
+      </div>
+
+      <!-- ============ ALERTAS (NUEVA — cubre vacío de 3.1/3.4) ============ -->
+      <div class="view" id="view-alertas">
+        <div class="px" style="padding-top:18px;padding-bottom:14px;background:#fff;border-bottom:1px solid var(--line);">
+          <h2 class="title">Alertas</h2>
+          <p class="sub">Notificaciones en tiempo real sobre tu ruta.</p>
+        </div>
+        <div class="px" style="padding-top:16px;">
+          <div class="card row" style="margin-bottom:18px;">
+            <div>
+              <p style="font-weight:700;font-size:13.5px;margin:0 0 2px;color:var(--navy);">Notificaciones push</p>
+              <p class="sub">Recibe avisos antes de llegar a la estación</p>
+            </div>
+            <div class="switch on" id="switch-push"></div>
+          </div>
+
+          <div id="alerts-list" style="display:flex;flex-direction:column;gap:12px;"></div>
+        </div>
+      </div>
+
+      <!-- ============ CUENTA: PERFIL + TARJETA + RECARGA ============ -->
+      <div class="view" id="view-cuenta">
+        <div class="px" style="padding-top:18px;padding-bottom:14px;background:#fff;border-bottom:1px solid var(--line);">
+          <button id="btn-open-profile" style="width:100%;background:none;border:0;padding:0;text-align:left;cursor:pointer;">
+            <div class="row">
+              <div class="flex-gap">
+                <div class="icon-circle" style="background:var(--steel);color:#fff;font-weight:800;font-family:'Fraunces',serif;">JC</div>
+                <div>
+                  <p style="font-weight:700;font-size:14.5px;margin:0;color:var(--navy);">Juan Carlos Quispe</p>
+                  <p class="sub">Ver perfil y preferencias</p>
+                </div>
+              </div>
+              <span style="font-size:22px;color:var(--muted);">›</span>
+            </div>
+          </button>
+        </div>
+        <div class="px" style="padding-top:18px;">
+          <div style="background:linear-gradient(135deg,var(--navy),var(--navy-2));border-radius:20px;padding:22px;color:#fff;margin-bottom:16px;position:relative;overflow:hidden;">
+            <div style="position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:rgba(0,167,154,.18);"></div>
+            <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Metropolitano_Lima_logo.svg" alt="" style="position:absolute;right:16px;top:16px;width:30px;height:30px;filter:brightness(0) invert(1);opacity:.85;" onerror="this.style.display='none'">
+            <p style="font-size:12px;color:#C7D5E2;margin:0 0 6px;">Tarjeta Metropolitano</p>
+            <p style="font-size:32px;font-weight:800;margin:0 0 18px;" id="saldo-display">S/ 12.50</p>
+            <p style="font-size:12.5px;letter-spacing:.06em;color:#9FB3C4;margin:0;">•••• •••• •••• 4417</p>
+          </div>
+          <button class="btn amber" id="btn-recargar" style="margin-bottom:22px;">Recargar saldo</button>
+
+          <b style="font-size:13.5px;color:var(--navy);">Historial reciente</b>
+          <div id="historial-list" style="display:flex;flex-direction:column;gap:10px;margin-top:10px;"></div>
+        </div>
+      </div>
+
+      <!-- ============ PERFIL DEL USUARIO ============ -->
+      <div class="view" id="view-perfil">
+        <div class="px" style="padding-top:18px;padding-bottom:14px;background:#fff;border-bottom:1px solid var(--line);">
+          <div class="row">
+            <button id="btn-back-profile" style="background:none;border:0;padding:4px 8px 4px 0;cursor:pointer;color:var(--navy);font-size:24px;line-height:1;">‹</button>
+            <div style="text-align:center;flex:1;">
+              <h2 class="title" style="font-size:18px;margin:0;">Mi perfil</h2>
+            </div>
+            <button id="btn-edit-profile" style="background:none;border:0;color:var(--steel);font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;padding:5px;">Editar</button>
+          </div>
+        </div>
+
+        <div class="px" style="padding-top:20px;">
+          <div class="profile-read">
+            <div style="text-align:center;margin-bottom:20px;">
+              <div class="profile-avatar" style="margin:0 auto 10px;">JC</div>
+              <h2 style="font-family:'Fraunces',serif;font-size:20px;margin:0;color:var(--navy);">Juan Carlos Quispe</h2>
+              <p class="sub" style="margin-top:4px;">Usuario registrado</p>
+            </div>
+
+            <div class="profile-section">
+              <button class="profile-item" id="profile-personal">
+                <span class="profile-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.2" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c.8-4 3.1-6 7-6s6.2 2 7 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </span>
+                <span><strong>Datos personales</strong><small>Nombre, DNI y celular</small></span><span class="profile-chevron">›</span>
+              </button>
+              <button class="profile-item" id="profile-card">
+                <span class="profile-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="2.3" stroke="currentColor" stroke-width="1.8"/><path d="M3 10.2h18" stroke="currentColor" stroke-width="1.8"/></svg>
+                </span>
+                <span><strong>Tarjeta Metropolitano</strong><small>•••• •••• •••• 4417</small></span><span class="profile-chevron">›</span>
+              </button>
+              <button class="profile-item" id="profile-payment">
+                <span class="profile-icon"><span style="font-weight:800;font-size:14px;">S/</span></span>
+                <span><strong>Medios de pago</strong><small>Gestiona tus métodos para recargas</small></span><span class="profile-chevron">›</span>
+              </button>
+            </div>
+
+            <div class="profile-section">
+              <button class="profile-item" id="profile-notifications">
+                <span class="profile-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9Z" stroke="currentColor" stroke-width="1.8"/><path d="M13.7 21a2 2 0 0 1-3.4 0" stroke="currentColor" stroke-width="1.8"/></svg>
+                </span>
+                <span><strong>Notificaciones</strong><small>Alertas de servicio y viaje</small></span><span class="profile-chevron">›</span>
+              </button>
+              <button class="profile-item" id="profile-security">
+                <span class="profile-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.8"/></svg>
+                </span>
+                <span><strong>Seguridad y acceso</strong><small>Cambiar contraseña y proteger tu cuenta</small></span><span class="profile-chevron">›</span>
+              </button>
+              <button class="profile-item" id="profile-privacy">
+                <span class="profile-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 3 20 6v5c0 5-3.3 8.4-8 10-4.7-1.6-8-5-8-10V6l8-3Z" stroke="currentColor" stroke-width="1.8"/><path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+                <span><strong>Privacidad</strong><small>Permisos y uso de tus datos</small></span><span class="profile-chevron">›</span>
+              </button>
+            </div>
+
+            <div class="profile-section">
+              <button class="profile-item" id="profile-help">
+                <span class="profile-icon"><b style="font-size:15px;">?</b></span>
+                <span><strong>Ayuda y soporte</strong><small>Preguntas frecuentes y contacto</small></span><span class="profile-chevron">›</span>
+              </button>
+              <button class="profile-item" id="profile-logout" style="color:var(--critical);">
+                <span class="profile-icon" style="color:var(--critical);"><span style="font-size:16px;">↪</span></span>
+                <span><strong>Cerrar sesión</strong><small>Salir de esta cuenta en este dispositivo</small></span><span class="profile-chevron">›</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="profile-edit">
+            <div class="card profile-form" style="margin-bottom:14px;">
+              <label class="field-label">Nombre completo</label>
+              <input type="text" id="profile-name" value="Juan Carlos Quispe">
+              <label class="field-label">Número de celular</label>
+              <input type="tel" id="profile-phone" value="987654321" maxlength="9">
+              <label class="field-label">DNI</label>
+              <input type="text" id="profile-dni" value="76543210" maxlength="8">
+              <label class="field-label">Correo electrónico</label>
+              <input type="text" id="profile-email" value="juancarlos@example.com">
+              <button class="btn" id="btn-save-profile">Guardar cambios</button>
+            </div>
+            <button class="btn ghost" id="btn-cancel-profile">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ BOTTOM NAV ============ -->
+      <div class="bottomnav" id="bottomnav" style="display:none;">
+        <button class="navbtn active" data-nav="home">
+          <span class="dot"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 11.5 12 4l8 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 10.2V19a1 1 0 0 0 1 1h3v-5.2h4V20h3a1 1 0 0 0 1-1v-8.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Inicio
+        </button>
+        <button class="navbtn" data-nav="rutas">
+          <span class="dot"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="6" cy="7" r="2.1" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="17" r="2.1" stroke="currentColor" stroke-width="1.8"/><path d="M6 9.1C6 13 9 12 11 14.5s3 3.5 5 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>Rutas
+        </button>
+        <button class="navbtn" data-nav="alertas">
+          <span class="dot" style="position:relative;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M13.7 21a2 2 0 0 1-3.4 0" stroke="currentColor" stroke-width="1.8"/></svg><span class="badge" id="nav-alert-badge">2</span></span>Alertas
+        </button>
+        <button class="navbtn" data-nav="cuenta">
+          <span class="dot"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="2.3" stroke="currentColor" stroke-width="1.8"/><path d="M3 10.2h18" stroke="currentColor" stroke-width="1.8"/><path d="M6.3 15h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>Cuenta
+        </button>
+      </div>
+
+      <!-- ---- overlays ---- -->
+      <div class="modal-center" id="modal-gps">
+        <div class="modal-card">
+          <div style="margin-bottom:10px;display:flex;justify-content:center;color:var(--steel);"><svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M12 22s7-7.58 7-12.5A7 7 0 0 0 5 9.5C5 14.42 12 22 12 22Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="9.5" r="2.3" stroke="currentColor" stroke-width="1.6"/></svg></div>
+          <h2 class="title" style="font-size:17px;">Permite tu ubicación</h2>
+          <p class="sub" style="margin:8px 0 20px;">Necesitamos tu ubicación para recomendarte la estación más cercana.</p>
+          <button class="btn" id="btn-gps-allow" style="margin-bottom:10px;">Permitir</button>
+          <button class="btn ghost" id="btn-gps-deny">Ahora no</button>
+        </div>
+      </div>
+
+      <div class="overlay" id="sheet-recarga">
+        <div class="sheet">
+          <div class="row" style="margin-bottom:16px;">
+            <h2 class="title" style="font-size:17px;">Recargar saldo</h2>
+            <button id="btn-close-sheet" style="background:none;border:none;cursor:pointer;color:var(--muted);display:flex;padding:4px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+          </div>
+          <p style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;">Elige un monto</p>
+          <div style="display:flex;gap:8px;margin-bottom:18px;" id="montos">
+            <button class="chip" data-monto="5">S/ 5</button>
+            <button class="chip" data-monto="10">S/ 10</button>
+            <button class="chip" data-monto="20">S/ 20</button>
+            <button class="chip" data-monto="50">S/ 50</button>
+          </div>
+          <p style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;">Método de pago</p>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;" id="metodos">
+            <div class="metodo-opt card row" data-metodo="yape" style="cursor:pointer;padding:12px 14px;">
+              <span style="font-weight:700;font-size:13.5px;display:flex;align-items:center;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" style="margin-right:8px;color:#8B5CF6;"><rect x="3" y="6" width="18" height="13" rx="2.4" stroke="currentColor" stroke-width="1.8"/><path d="M3 10.2h18" stroke="currentColor" stroke-width="1.8"/><circle cx="16.5" cy="14.3" r="1.1" fill="currentColor"/></svg>Yape</span>
+              <span class="radio-dot" style="width:16px;height:16px;border-radius:50%;border:2px solid var(--line);"></span>
+            </div>
+            <div class="metodo-opt card row" data-metodo="tarjeta" style="cursor:pointer;padding:12px 14px;">
+              <span style="font-weight:700;font-size:13.5px;display:flex;align-items:center;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" style="margin-right:8px;color:var(--navy);"><rect x="3" y="6" width="18" height="13" rx="2.4" stroke="currentColor" stroke-width="1.8"/><path d="M3 10.2h18" stroke="currentColor" stroke-width="1.8"/><path d="M6.3 14.8h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Tarjeta de crédito / débito</span>
+              <span class="radio-dot" style="width:16px;height:16px;border-radius:50%;border:2px solid var(--line);"></span>
+            </div>
+          </div>
+          <button class="btn amber" id="btn-confirmar-recarga">Recargar ahora</button>
+        </div>
+      </div>
+
+      <div class="toast" id="toast">
+        <span style="display:flex;flex-shrink:0;color:var(--green);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M8 12.3l2.6 2.6L16 9.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span id="toast-text">Recarga exitosa</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="credits">Prototipo construido a partir de los prompts de UX/UI y el Avance de Proyecto 1 · Metropolitano Lima App · UTP, Sección 46790<br>
+Logotipo y fotografías reales del Metropolitano de Lima: Wikimedia Commons (Japonium123, dominio libre / CC BY-SA) — usados con fines académicos e ilustrativos.</p>
+
+<script>
+// ---------------- IMAGE FALLBACK (por si no hay internet el día de la exposición) ----------------
+function fallbackLogo(img){
+  const box = document.getElementById('splash-logo-box');
+  box.innerHTML = '<svg width="44" height="44" viewBox="0 0 24 24" fill="none"><path d="M4 16V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" stroke="#0B3552" stroke-width="1.8"/><path d="M4 12h16" stroke="#0B3552" stroke-width="1.8"/><circle cx="8" cy="18.5" r="1.5" fill="#0B3552"/><circle cx="16" cy="18.5" r="1.5" fill="#0B3552"/></svg>';
+}
+
+// ---------------- STATE ----------------
+const state = {
+  saldo: 12.50,
+  montoSeleccionado: null,
+  metodoSeleccionado: null,
+  alertsUnread: 2,
+  gpsGranted: false,
+  historial: [
+    {tipo:'Viaje', desc:'Naranjal → Estación Central', monto:-2.50, fecha:'Hoy, 07:04 a.m.'},
+    {tipo:'Recarga', desc:'Recarga vía Yape', monto:10.00, fecha:'Ayer, 08:12 p.m.'},
+    {tipo:'Viaje', desc:'Central → Naranjal', monto:-2.50, fecha:'Ayer, 06:41 p.m.'},
+  ],
+  stations: [
+    {name:'Naranjal', sub:'Terminal Norte', status:'green', label:'En camino · 4 min'},
+    {name:'Izaguirre', sub:'Independencia', status:'green', label:'En camino · 5 min'},
+    {name:'Los Jazmines', sub:'Comas', status:'green', label:'En camino · 6 min'},
+    {name:'Honorio Delgado', sub:'Los Olivos', status:'amber', label:'Demora · 12 min'},
+    {name:'Tomás Valle', sub:'Independencia', status:'red', label:'Vía bloqueada'},
+    {name:'Caquetá', sub:'Cercado de Lima', status:'amber', label:'Demora · 10 min'},
+    {name:'Estación Central', sub:'Cercado de Lima', status:'green', label:'En camino · 3 min'},
+    {name:'Angamos', sub:'Surquillo', status:'green', label:'En camino · 7 min'},
+  ],
+  alerts: [
+    {level:'red', title:'Bloqueo temporal en Tomás Valle', body:'Vía obstruida en el carril exclusivo. Tu ruta puede demorar hasta 15 min adicionales.', time:'Hace 2 min'},
+    {level:'amber', title:'Congestión cerca de Caquetá', body:'Tráfico en Av. Universitaria está afectando al Expreso 1. Demora estimada: 10 min.', time:'Hace 9 min'},
+    {level:'green', title:'Tu bus está llegando', body:'El Expreso 1 llega a Naranjal en 2 minutos.', time:'Hace 14 min'},
+  ],
+  rutas: {
+    izaguirre:      {destinoNombre:'Estación Izaguirre', tiempo:'6 min', transbordos:0, linea:'Regular A', paradas:['Naranjal','Izaguirre']},
+    independencia:  {destinoNombre:'Estación Independencia', tiempo:'14 min', transbordos:0, linea:'Regular A', paradas:['Naranjal','Izaguirre','Pacífico','Independencia']},
+    tomasvalle:     {destinoNombre:'Estación Tomás Valle', tiempo:'19 min', transbordos:0, linea:'Regular A', paradas:['Naranjal','Izaguirre','Independencia','Los Jazmines','Tomás Valle']},
+    honoriodelgado: {destinoNombre:'Estación Honorio Delgado', tiempo:'22 min', transbordos:0, linea:'Expreso 1', paradas:['Naranjal','Los Jazmines','Tomás Valle','Honorio Delgado']},
+    caqueta:        {destinoNombre:'Estación Caquetá', tiempo:'27 min', transbordos:0, linea:'Regular A', paradas:['Naranjal','Honorio Delgado','UNI','Parque del Trabajo','Caquetá']},
+    ramoncastilla:  {destinoNombre:'Estación Ramón Castilla', tiempo:'29 min', transbordos:0, linea:'Regular A', paradas:['Naranjal','Honorio Delgado','Caquetá','Ramón Castilla']},
+    central:        {destinoNombre:'Estación Central', tiempo:'32 min', transbordos:0, linea:'Expreso 1', paradas:['Naranjal','Honorio Delgado','Caquetá','Ramón Castilla','Estación Central']},
+    canada:         {destinoNombre:'Estación Canadá', tiempo:'36 min', transbordos:0, linea:'Regular B', paradas:['Naranjal','Honorio Delgado','Estación Central','Canadá']},
+    aramburu:       {destinoNombre:'Estación Aramburú', tiempo:'40 min', transbordos:1, linea:'Expreso 1 → Regular C', paradas:['Naranjal','Los Jazmines','Honorio Delgado','Estación Central','Canadá','Aramburú']},
+    angamos:        {destinoNombre:'Estación Angamos', tiempo:'46 min', transbordos:1, linea:'Expreso 1 → Regular B', paradas:['Naranjal','Honorio Delgado','Estación Central','Aramburú','Angamos']},
+    ricardopalma:   {destinoNombre:'Estación Ricardo Palma', tiempo:'50 min', transbordos:1, linea:'Expreso 1 → Regular B', paradas:['Naranjal','Honorio Delgado','Estación Central','Angamos','Ricardo Palma']},
+    matellini:      {destinoNombre:'Terminal Matellini', tiempo:'58 min', transbordos:0, linea:'Expreso 2', paradas:['Naranjal','Estación Central','Angamos','Ricardo Palma','Matellini']},
+  }
+};
+
+// ---------------- NAV ----------------
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+}
+function showNavTab(name){
+  showView(name);
+  document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active', b.dataset.nav===name));
+}
+document.querySelectorAll('.navbtn').forEach(btn=>{
+  btn.addEventListener('click', ()=>showNavTab(btn.dataset.nav));
+});
+
+// ---------------- SPLASH -> LOGIN ----------------
+document.getElementById('btn-splash-continue').addEventListener('click', ()=> showView('login'));
+
+// ---------------- LOGIN ----------------
+document.getElementById('btn-login').addEventListener('click', ()=>{
+  const phone = document.getElementById('login-phone').value.trim();
+  const dni = document.getElementById('login-dni').value.trim();
+  const err = document.getElementById('login-error');
+  if(!phone || !dni){ err.style.display='block'; return; }
+  err.style.display='none';
+  document.getElementById('bottomnav').style.display='flex';
+  showNavTab('home');
+  document.getElementById('modal-gps').classList.add('show');
+});
+
+// ---------------- GPS MODAL ----------------
+document.getElementById('btn-gps-allow').addEventListener('click', ()=>{
+  document.getElementById('modal-gps').classList.remove('show');
+  state.gpsGranted = true;
+  document.getElementById('gps-tag').style.display='flex';
+  showToast('Ubicación detectada: Naranjal');
+});
+document.getElementById('btn-gps-deny').addEventListener('click', ()=>{
+  document.getElementById('modal-gps').classList.remove('show');
+});
+
+// ---------------- HOME: stations list + search ----------------
+function statusPill(s){
+  if(s.status==='green') return `<span class="pill green"><span class="dotstat"></span>${s.label}</span>`;
+  if(s.status==='amber') return `<span class="pill amber"><span class="dotstat"></span>${s.label}</span>`;
+  return `<span class="pill red"><span class="dotstat"></span>${s.label}</span>`;
+}
+function renderStations(filter=''){
+  const wrap = document.getElementById('stations-list');
+  const items = state.stations.filter(s=>s.name.toLowerCase().includes(filter.toLowerCase()));
+  wrap.innerHTML = items.length ? items.map(s=>`
+    <div class="card row">
+      <div>
+        <p style="font-weight:700;font-size:13.5px;margin:0 0 2px;color:var(--navy);">${s.name}</p>
+        <p class="sub">${s.sub}</p>
+      </div>
+      ${statusPill(s)}
+    </div>
+  `).join('') : `<p class="sub" style="text-align:center;padding:14px 0;">Ninguna estación coincide con tu búsqueda.</p>`;
+}
+renderStations();
+document.getElementById('home-search').addEventListener('input', (e)=> renderStations(e.target.value));
+
+document.getElementById('btn-open-alerts-bell').addEventListener('click', ()=>{
+  showNavTab('alertas');
+});
+
+// ---------------- RUTAS: planner ----------------
+document.getElementById('btn-buscar-ruta').addEventListener('click', ()=>{
+  const val = document.getElementById('ruta-destino').value;
+  const box = document.getElementById('ruta-resultado');
+  if(!val){ box.style.display='none'; return; }
+  const r = state.rutas[val];
+  document.getElementById('ruta-card').innerHTML = `
+    <div class="row" style="margin-bottom:10px;">
+      <b style="font-size:14px;color:var(--navy);">Naranjal → ${r.destinoNombre}</b>
+      <span class="pill amber">${r.transbordos} trasbordo${r.transbordos!==1?'s':''}</span>
+    </div>
+    <p class="sub" style="margin-bottom:6px;">Línea: ${r.linea}</p>
+    <p style="font-size:20px;font-weight:800;color:var(--steel);margin:0;">${r.tiempo}</p>
+  `;
+  box.style.display='block';
+  window.__rutaActual = val;
+});
+
+document.getElementById('btn-ver-ruta').addEventListener('click', ()=>{
+  const val = window.__rutaActual;
+  if(!val) return;
+  const r = state.rutas[val];
+  document.getElementById('detalle-titulo').textContent = `Naranjal → ${r.destinoNombre}`;
+  document.getElementById('detalle-tiempo').textContent = r.tiempo;
+  document.getElementById('detalle-transbordo').textContent = `${r.transbordos} trasbordo${r.transbordos!==1?'s':''}`;
+  renderTimeline(r.paradas);
+  showView('detalle');
+  resetEta();
+});
+
+document.getElementById('btn-back-detalle').addEventListener('click', ()=> showNavTab('rutas'));
+
+function renderTimeline(paradas){
+  const el = document.getElementById('timeline');
+  el.innerHTML = `<div style="position:absolute;left:5px;top:6px;bottom:6px;width:2px;background:var(--line);"></div>` +
+    paradas.map((p,i)=>`
+      <div style="position:relative;padding-bottom:22px;" data-stop="${i}">
+        <div class="stop-dot" style="position:absolute;left:-22px;top:2px;width:12px;height:12px;border-radius:50%;background:${i===0?'var(--steel)':'var(--line)'};border:2px solid #fff;box-shadow:0 0 0 1px ${i===0?'var(--steel)':'var(--line)'};"></div>
+        <p style="margin:0;font-size:13.5px;font-weight:${i===0?'800':'500'};color:${i===0?'var(--navy)':'var(--ink)'};">${p}</p>
+      </div>
+    `).join('');
+}
+
+// ---------------- ETA live countdown ----------------
+let etaSeconds = 180;
+let etaTimer = null;
+function resetEta(){
+  clearInterval(etaTimer);
+  etaSeconds = 180;
+  updateEtaDisplay();
+  etaTimer = setInterval(()=>{
+    etaSeconds = Math.max(0, etaSeconds-1);
+    updateEtaDisplay();
+    if(etaSeconds===0) clearInterval(etaTimer);
+  },1000);
+}
+function updateEtaDisplay(){
+  const m = Math.floor(etaSeconds/60), s = etaSeconds%60;
+  document.getElementById('eta-count').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+}
+
+document.getElementById('btn-iniciar-viaje').addEventListener('click', function(){
+  const stops = document.querySelectorAll('#timeline [data-stop]');
+  let i = 0;
+  this.textContent = 'Viaje en curso...';
+  this.disabled = true;
+  const advance = setInterval(()=>{
+    if(i>0){
+      const prevDot = stops[i-1].querySelector('.stop-dot');
+      prevDot.style.background = 'var(--green)';
+      prevDot.style.boxShadow = '0 0 0 1px var(--green)';
+    }
+    if(i>=stops.length){
+      clearInterval(advance);
+      showToast('Has llegado a tu destino');
+      this.textContent = 'Iniciar viaje';
+      this.disabled = false;
+      return;
+    }
+    const dot = stops[i].querySelector('.stop-dot');
+    dot.style.background = 'var(--steel)';
+    dot.style.boxShadow = '0 0 0 1px var(--steel)';
+    stops[i].querySelector('p').style.fontWeight = '800';
+    stops[i].querySelector('p').style.color = 'var(--navy)';
+    i++;
+  }, 900);
+});
+
+// ---------------- ALERTAS ----------------
+const ALERT_ICONS = {
+  red:   '<svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 4 22 20H2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 10.3v3.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="17" r="0.95" fill="currentColor"/></svg>',
+  amber: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.3v5l3.3 1.9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  green: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M8 12.3l2.6 2.6L16 9.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+};
+function renderAlerts(){
+  const wrap = document.getElementById('alerts-list');
+  wrap.innerHTML = state.alerts.map(a=>{
+    const colors = {red:['#FBE7E5','var(--critical)'], amber:['#FDF1DC','#8A5A0B'], green:['#E4F7EE','var(--green)']};
+    const [bg,fg] = colors[a.level];
+    return `
+    <div class="card" style="border-left:4px solid ${fg};">
+      <div class="row" style="margin-bottom:6px;">
+        <span style="font-weight:800;font-size:13px;color:var(--navy);display:flex;align-items:center;gap:7px;"><span style="display:flex;color:${fg};flex-shrink:0;">${ALERT_ICONS[a.level]}</span>${a.title}</span>
+      </div>
+      <p style="font-size:12.5px;color:var(--ink);margin:0 0 8px;line-height:1.4;">${a.body}</p>
+      <p class="sub" style="margin:0;">${a.time}</p>
+    </div>`;
+  }).join('');
+}
+renderAlerts();
+
+document.getElementById('switch-push').addEventListener('click', function(){
+  this.classList.toggle('on');
+});
+
+function clearAlertBadge(){
+  state.alertsUnread = 0;
+  document.getElementById('home-alert-badge').style.display='none';
+  document.getElementById('nav-alert-badge').style.display='none';
+}
+document.querySelectorAll('[data-nav="alertas"]').forEach(b=>{});
+document.getElementById('view-alertas').addEventListener('transitionend', ()=>{});
+// clear badge whenever alerts tab is opened
+const origShowNavTab = showNavTab;
+showNavTab = function(name){
+  origShowNavTab(name);
+  if(name==='alertas') clearAlertBadge();
+};
+document.querySelectorAll('.navbtn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{ if(btn.dataset.nav==='alertas') clearAlertBadge(); });
+});
+
+// ---------------- PERFIL ----------------
+const profileRead = document.querySelector('#view-perfil .profile-read');
+const profileEdit = document.querySelector('#view-perfil .profile-edit');
+function openProfile(){ showView('perfil'); }
+function toggleProfileEdit(editing){
+  profileRead.classList.toggle('hide', editing);
+  profileEdit.classList.toggle('show', editing);
+  document.getElementById('btn-edit-profile').style.visibility = editing ? 'hidden' : 'visible';
+}
+document.getElementById('btn-open-profile').addEventListener('click', openProfile);
+document.getElementById('btn-back-profile').addEventListener('click', ()=> showNavTab('cuenta'));
+document.getElementById('btn-edit-profile').addEventListener('click', ()=> toggleProfileEdit(true));
+document.getElementById('btn-cancel-profile').addEventListener('click', ()=> toggleProfileEdit(false));
+document.getElementById('btn-save-profile').addEventListener('click', ()=>{
+  const name = document.getElementById('profile-name').value.trim();
+  const phone = document.getElementById('profile-phone').value.trim();
+  const dni = document.getElementById('profile-dni').value.trim();
+  const email = document.getElementById('profile-email').value.trim();
+  if(!name || !phone || !dni || !email){ showToast('Completa todos los datos'); return; }
+  const initials = name.split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
+  document.querySelectorAll('#view-perfil .profile-avatar').forEach(el=>el.textContent=initials);
+  document.querySelector('#view-cuenta .icon-circle').textContent=initials;
+  document.querySelector('#view-cuenta p[style*="font-size:14.5px"]').textContent=name;
+  document.querySelector('#view-perfil .profile-read h2').textContent=name;
+  toggleProfileEdit(false);
+  showToast('Perfil actualizado');
+});
+
+function profileAction(message){ showToast(message); }
+document.getElementById('profile-personal').addEventListener('click', ()=> toggleProfileEdit(true));
+document.getElementById('profile-card').addEventListener('click', ()=> profileAction('Puedes consultar tu tarjeta desde Cuenta'));
+document.getElementById('profile-payment').addEventListener('click', ()=> profileAction('Gestión de medios de pago disponible para recargas'));
+document.getElementById('profile-notifications').addEventListener('click', ()=>{ showNavTab('alertas'); });
+document.getElementById('profile-security').addEventListener('click', ()=> profileAction('Aquí podrás gestionar tu acceso y contraseña'));
+document.getElementById('profile-privacy').addEventListener('click', ()=> profileAction('Permisos y privacidad de la cuenta'));
+document.getElementById('profile-help').addEventListener('click', ()=> profileAction('Centro de ayuda y soporte'));
+document.getElementById('profile-logout').addEventListener('click', ()=>{
+  document.getElementById('bottomnav').style.display='none';
+  showView('login');
+  showToast('Sesión cerrada');
+});
+
+// ---------------- CUENTA: historial ----------------
+function renderHistorial(){
+  document.getElementById('historial-list').innerHTML = state.historial.map(h=>`
+    <div class="card row">
+      <div>
+        <p style="font-weight:700;font-size:13px;margin:0 0 2px;color:var(--navy);">${h.desc}</p>
+        <p class="sub">${h.fecha}</p>
+      </div>
+      <b style="font-size:13.5px;color:${h.monto>0?'var(--green)':'var(--critical)'};">${h.monto>0?'+':'−'}S/ ${Math.abs(h.monto).toFixed(2)}</b>
+    </div>
+  `).join('');
+}
+renderHistorial();
+
+// ---------------- RECARGA ----------------
+document.getElementById('btn-recargar').addEventListener('click', ()=>{
+  document.getElementById('sheet-recarga').classList.add('show');
+});
+document.getElementById('btn-close-sheet').addEventListener('click', ()=>{
+  document.getElementById('sheet-recarga').classList.remove('show');
+});
+document.querySelectorAll('#montos .chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    document.querySelectorAll('#montos .chip').forEach(c=>c.classList.remove('selected'));
+    chip.classList.add('selected');
+    state.montoSeleccionado = parseFloat(chip.dataset.monto);
+  });
+});
+document.querySelectorAll('.metodo-opt').forEach(opt=>{
+  opt.addEventListener('click', ()=>{
+    document.querySelectorAll('.metodo-opt').forEach(o=>{
+      o.style.borderColor='var(--line)';
+      o.querySelector('.radio-dot').style.background='transparent';
+      o.querySelector('.radio-dot').style.borderColor='var(--line)';
+    });
+    opt.style.borderColor='var(--steel)';
+    opt.querySelector('.radio-dot').style.background='var(--steel)';
+    opt.querySelector('.radio-dot').style.borderColor='var(--steel)';
+    state.metodoSeleccionado = opt.dataset.metodo;
+  });
+});
+document.getElementById('btn-confirmar-recarga').addEventListener('click', ()=>{
+  if(!state.montoSeleccionado || !state.metodoSeleccionado){
+    showToast('Elige un monto y un método de pago');
+    return;
+  }
+  state.saldo += state.montoSeleccionado;
+  document.getElementById('saldo-display').textContent = `S/ ${state.saldo.toFixed(2)}`;
+  state.historial.unshift({
+    tipo:'Recarga',
+    desc:`Recarga vía ${state.metodoSeleccionado==='yape'?'Yape':'Tarjeta'}`,
+    monto: state.montoSeleccionado,
+    fecha:'Ahora'
+  });
+  renderHistorial();
+  document.getElementById('sheet-recarga').classList.remove('show');
+  showToast(`Recargaste S/ ${state.montoSeleccionado.toFixed(2)}`);
+  state.montoSeleccionado = null;
+  state.metodoSeleccionado = null;
+  document.querySelectorAll('#montos .chip').forEach(c=>c.classList.remove('selected'));
+  document.querySelectorAll('.metodo-opt').forEach(o=>{
+    o.style.borderColor='var(--line)';
+    o.querySelector('.radio-dot').style.background='transparent';
+  });
+});
+
+// ---------------- TOAST ----------------
+let toastTimer=null;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  document.getElementById('toast-text').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.classList.remove('show'), 2600);
+}
+</script>
+
+<style>
+  .chip{
+    flex:1;
+    padding:11px 0;
+    border-radius:12px;
+    border:1.5px solid var(--line);
+    background:#fff;
+    font-family:inherit;
+    font-weight:700;
+    font-size:13.5px;
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .chip.selected{
+    border-color:var(--amber);
+    background:#FDF1DC;
+    color:#8A5A0B;
+  }
+</style>
+</body>
+</html>

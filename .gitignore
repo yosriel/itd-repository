@@ -1,0 +1,4 @@
+docs/*.log
+docs/npm-audit*.json
+.env
+*.local
