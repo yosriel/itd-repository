@@ -140,7 +140,7 @@ export function Account({
           </View>
         </Card>
       ))}
-      <Sub>Saldo e historial simulados · Prototipo académico</Sub>
+      <Sub>Saldo e historial de prueba</Sub>
       <RechargeSheet visible={sheet} close={() => setSheet(false)} />
     </Page>
   );
@@ -247,8 +247,8 @@ function RechargeSheet({
             >
               <Heading>
                 {value === 'YAPE_DEMO'
-                  ? 'Yape · Simulado'
-                  : 'Tarjeta de crédito / débito · Simulada'}
+                  ? 'Yape · sin cobro'
+                  : 'Tarjeta de crédito / débito · sin cobro'}
               </Heading>
             </Pressable>
           ))}
@@ -328,7 +328,7 @@ export function Profile({
     },
     {
       title: 'Medios de pago',
-      sub: 'Opciones de recarga de demostración',
+      sub: 'Métodos disponibles en esta versión',
       icon: Wallet,
       action: () => navigation.navigate('Settings', { section: 'payments' }),
     },
@@ -352,7 +352,7 @@ export function Profile({
     },
     {
       title: 'Ayuda y soporte',
-      sub: 'Preguntas frecuentes del prototipo',
+      sub: 'Preguntas frecuentes',
       icon: CircleHelp,
       action: () => navigation.navigate('Settings', { section: 'help' }),
     },
@@ -436,7 +436,7 @@ export function Profile({
               <Text className="font-title text-[20px] text-navy">
                 {state.profile.fullName}
               </Text>
-              <Sub>Usuario de demostración</Sub>
+              <Sub>Cuenta de presentación</Sub>
             </View>
             {[rows.slice(0, 3), rows.slice(3, 6), rows.slice(6)].map(
               (group, groupIndex) => (
@@ -493,7 +493,7 @@ export function Settings({
   const content = {
     payments: {
       title: 'Medios de pago',
-      text: 'Yape y tarjeta son opciones de demostración dentro de Recargar saldo. No hay tarjetas bancarias vinculadas ni pasarela de pagos. No ingreses información financiera real.',
+      text: 'Yape y tarjeta permiten probar el flujo de recarga. No hay tarjetas bancarias vinculadas ni pasarela de pagos, y no se realizan cobros. No ingreses información financiera real.',
     },
     security: {
       title: 'Seguridad y acceso',
@@ -501,11 +501,11 @@ export function Settings({
     },
     privacy: {
       title: 'Privacidad',
-      text: 'Utiliza datos inventados. La demo conectada guarda perfil, saldo de prueba y preferencias en la base local del backend. La demo sin conexión se borra al cerrar sesión. Esta versión no solicita GPS ni envía notificaciones push. No contiene una integración oficial con ATU.',
+      text: 'Utiliza los datos asignados para la presentación. La cuenta conectada guarda perfil, saldo de prueba y preferencias en la base local del backend. El modo sin conexión se borra al cerrar sesión. Esta versión no solicita GPS ni envía notificaciones push. No contiene una integración oficial con ATU.',
     },
     help: {
       title: 'Ayuda y soporte',
-      text: '¿La recarga cobra dinero? No, solo suma saldo ficticio.\n\n¿Los buses están en vivo? No, sus estados y tiempos son ejemplos del HTML.\n\n¿Dónde se guarda mi perfil? En el backend al entrar a la demo conectada; sin conexión solo durante la sesión.\n\n¿Puedo consultar una tarjeta física? No.\n\nEste prototipo no tiene canal de atención oficial ni tickets de soporte.',
+      text: '¿La recarga cobra dinero? No, solo suma saldo de prueba.\n\n¿Los buses están en vivo? No, los estados y tiempos son referenciales.\n\n¿Dónde se guarda mi perfil? En el backend al ingresar conectado; sin conexión solo durante la sesión.\n\n¿Puedo consultar una tarjeta física? No.\n\nEsta versión no tiene canal de atención ni tickets de soporte.',
     },
   }[route.params.section];
   return (

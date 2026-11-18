@@ -16,13 +16,13 @@ export function StationBoard({ station, close }: { station: string | null; close
     <View className="flex-1 justify-center bg-black/50 px-5">
       <View className="max-h-[80%] w-full max-w-[440px] self-center rounded-3xl bg-white p-5 gap-4">
         <Heading>{station} · Próximos buses</Heading>
-        <Sub>Tablero simulado. Servicios del HTML; andenes y llegadas de prueba.</Sub>
+        <Sub>Servicios y tiempos de referencia.</Sub>
         <ScrollView contentContainerClassName="gap-3">
           {arrivals.map(arrival => {
             const seconds = (arrival.seconds - elapsed % (arrival.seconds + 30) + arrival.seconds + 30) % (arrival.seconds + 30);
             return <Card key={arrival.line}><Heading>{arrival.line}</Heading><Sub>{arrival.platform}</Sub><Text accessibilityLiveRegion="none" className="font-sans text-[24px] font-bold text-steel">{seconds === 0 ? 'Llegando' : `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`}</Text></Card>;
           })}
-          {!arrivals.length && <Sub>No hay servicios de ejemplo para esta estación.</Sub>}
+          {!arrivals.length && <Sub>No hay servicios disponibles para esta estación.</Sub>}
         </ScrollView>
         <Button title="Cerrar" onPress={close} />
       </View>

@@ -11,6 +11,10 @@ import {
 } from '../src/demoTransit';
 import { logoXml } from '../assets/images/logo';
 import './style.css';
+import { Assistant } from './Assistant';
+import { assistantSections } from '../src/assistantOptions';
+import type { TabParams } from '../src/navigationTypes';
+import { aiSupportedStations, requestAiRoute, Scenario, stationLabel, AiRouteResponse } from '../src/aiRoute';
 const logo = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(logoXml)}`;
 const images = {
   splash: new URL('../assets/images/splash.jpg', import.meta.url).href,
@@ -29,6 +33,10 @@ function WebApp() {
   const [origin, setOrigin] = useState('Naranjal');
   const [destination, setDestination] = useState('');
   const [plan, setPlan] = useState<DemoPlan | null>(null);
+  const [aiPrediction, setAiPrediction] = useState<AiRouteResponse | null>(null);
+  const [aiScenario, setAiScenario] = useState<Scenario>('peak');
+  const [aiIncident, setAiIncident] = useState(true);
+  const [routeLoading, setRouteLoading] = useState(false);
   const [detail, setDetail] = useState(false);
   const [station, setStation] = useState('');
   const [modal, setModal] = useState('');
@@ -70,6 +78,44 @@ function WebApp() {
       setError(e instanceof Error ? e.message : 'Error');
     }
   }
+  async function searchRoute() {
+    setPlan(null);
+    setAiPrediction(null);
+    setError('');
+    if (app.mode !== 'connected') {
+      setPlan(planDemo(origin, destination));
+      return;
+    }
+    setRouteLoading(true);
+    try {
+      const prediction = await requestAiRoute(origin, destination, aiScenario, aiIncident);
+      setAiPrediction(prediction);
+      setPlan({
+        origin,
+        destinoNombre: destination,
+        tiempo: `${prediction.costo_grafo_minutos} min · A*`,
+        linea: 'Ruta calculada por A*',
+        paradas: prediction.ruta.map(stationLabel),
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo consultar la API de IA.');
+    } finally {
+      setRouteLoading(false);
+    }
+  }
+  function navigateTo(name: string) {
+    setTab(name);
+    setProfile(false);
+    setDetail(false);
+    setError('');
+    if (name === 'Alertas') {
+      run(app.readAlerts);
+    }
+  }
+  function navigateFromAssistant(target: keyof TabParams) {
+    const section = assistantSections.find(item => item.tab === target);
+    if (section) { navigateTo(section.label); }
+  }
   const button = (title: string, action: () => void, ghost = false) => (
     <button
       type="button"
@@ -92,15 +138,15 @@ function WebApp() {
             />
             <div className="fade" />
             <div className="splash-content">
-              <img className="mark" src={logo} alt="Logotipo del prototipo" />
+              <img className="mark" src={logo} alt="Logotipo de Metropolitano Lima App" />
               <h1>
                 Metropolitano
                 <br />
                 Lima App
               </h1>
-              <p>Tu ruta, en una experiencia de demostración.</p>
+              <p>Tu ruta, en un solo lugar.</p>
               {button('Pulsa para continuar', () => setSplash(false))}
-              <small>Prototipo académico · Sin conexión oficial con ATU</small>
+              <small>Experiencia académica · Datos de referencia</small>
             </div>
           </section>
         ) : (
@@ -111,7 +157,7 @@ function WebApp() {
               alt="Logotipo del HTML"
             />
             <h1>Inicia sesión</h1>
-            <p>Ingresa con datos ficticios para explorar el prototipo.</p>
+            <p>Ingresa con el celular y DNI registrados para esta presentación.</p>
             <form
               onSubmit={e => {
                 e.preventDefault();
@@ -148,7 +194,7 @@ function WebApp() {
                 {error}
               </p>
             )}
-            <small>Prototipo académico · Datos simulados</small>
+            <small>Acceso de presentación · Datos de prueba</small>
           </section>
         )}
       </main>
@@ -158,7 +204,6 @@ function WebApp() {
     <main className="shell">
       <header>
         <small>
-          Prototipo académico ·{' '}
           {app.mode === 'connected' ? 'Conectado' : 'Sin conexión'}
         </small>
         {tab === 'Inicio' ? (
@@ -249,7 +294,7 @@ function WebApp() {
                 </h2>
                 <h1>{plan.tiempo}</h1>
                 <p>{plan.linea}</p>
-                <small>{plan.transbordos} transbordos · Simulado</small>
+                <small>{plan.transbordos === undefined ? 'Transbordos no incluidos en el cálculo' : `${plan.transbordos} transbordos estimados`}</small>
               </div>
               {plan.paradas.map((stop, i) => (
                 <div className="card" key={stop}>
@@ -260,12 +305,10 @@ function WebApp() {
               {button(
                 travelIndex >= 0
                   ? 'Cancelar simulación'
-                  : 'Iniciar viaje simulado',
+                  : 'Iniciar recorrido guiado',
                 () => setTravelIndex(travelIndex >= 0 ? -1 : 0),
               )}
-              <small>
-                Recorrido ilustrativo; no sigue un bus real ni cobra pasaje.
-              </small>
+              <small>Explora el orden de las estaciones del recorrido.</small>
             </>
           ) : (
             <>
@@ -276,9 +319,10 @@ function WebApp() {
                   onChange={e => {
                     setOrigin(e.target.value);
                     setPlan(null);
+                    setAiPrediction(null);
                   }}
                 >
-                  {demoStations.map(s => (
+                  {(app.mode === 'connected' ? aiSupportedStations : demoStations).map(s => (
                     <option key={s}>{s}</option>
                   ))}
                 </select>
@@ -290,10 +334,11 @@ function WebApp() {
                   onChange={e => {
                     setDestination(e.target.value);
                     setPlan(null);
+                    setAiPrediction(null);
                   }}
                 >
                   <option value="">Selecciona una estación</option>
-                  {demoStations.map(s => (
+                  {(app.mode === 'connected' ? aiSupportedStations : demoStations).map(s => (
                     <option key={s}>{s}</option>
                   ))}
                 </select>
@@ -305,15 +350,37 @@ function WebApp() {
                     setOrigin(destination);
                     setDestination(origin);
                     setPlan(null);
+                    setAiPrediction(null);
                   }
                 },
                 true,
               )}
+              {app.mode === 'connected' && (
+                <section className="ai-route-options" aria-label="Escenario de predicción">
+                  <strong>Escenario de predicción · Datos sintéticos</strong>
+                  <small>La distancia, el servicio y la frecuencia restante son supuestos de ejemplo.</small>
+                  <div className="ai-route-presets">
+                    <button type="button" aria-pressed={aiScenario === 'peak'}
+                      onClick={() => { setAiScenario('peak'); setPlan(null); setAiPrediction(null); }}>
+                      Hora punta
+                    </button>
+                    <button type="button" aria-pressed={aiScenario === 'offpeak'}
+                      onClick={() => { setAiScenario('offpeak'); setPlan(null); setAiPrediction(null); }}>
+                      Hora valle
+                    </button>
+                  </div>
+                  <label className="ai-route-incident">
+                    <input type="checkbox" checked={aiIncident}
+                      onChange={event => { setAiIncident(event.target.checked); setPlan(null); setAiPrediction(null); }} />
+                    Incluir incidencia en Caquetá
+                  </label>
+                </section>
+              )}
               <button
-                disabled={!destination || origin === destination}
-                onClick={() => setPlan(planDemo(origin, destination))}
+                disabled={!destination || origin === destination || routeLoading}
+                onClick={searchRoute}
               >
-                Buscar ruta
+                {routeLoading ? 'Calculando…' : 'Buscar ruta'}
               </button>
               {origin === destination && (
                 <p role="alert">Elige dos estaciones diferentes.</p>
@@ -325,14 +392,21 @@ function WebApp() {
                   </h2>
                   <p>{plan.linea}</p>
                   <strong>
-                    {plan.tiempo} · {plan.transbordos} transbordos
+                    {plan.tiempo}{plan.transbordos === undefined ? '' : ` · ${plan.transbordos} transbordos`}
                   </strong>
                   {button('Ver ruta trazada', () => setDetail(true))}
                 </article>
               )}
+              {aiPrediction && (
+                <article className="card" aria-live="polite">
+                  <h2>Predicción de IA</h2>
+                  <p>ETA Ridge: {aiPrediction.eta_modelo_minutos} min. Es distinto del costo A*.</p>
+                  <p>Saturación: {aiPrediction.saturacion_critica ? 'crítica' : 'normal'} · probabilidad XGBoost: {(aiPrediction.probabilidad_saturacion * 100).toFixed(1)}%</p>
+                  <small>Estimaciones con datos sintéticos, no información en tiempo real.</small>
+                </article>
+              )}
               <small>
-                Estimaciones de prueba; no representan recorridos operativos
-                verificados.
+                Estimaciones de referencia; no hay horarios en vivo disponibles.
               </small>
             </>
           ))}
@@ -341,7 +415,7 @@ function WebApp() {
             <article className="card row">
               <div>
                 <h2>Notificaciones push</h2>
-                <small>Preferencia simulada</small>
+                <small>Preferencia de avisos</small>
               </div>
               <input
                 aria-label="Notificaciones"
@@ -472,20 +546,13 @@ function WebApp() {
           <button
             key={name}
             aria-current={tab === name ? 'page' : undefined}
-            onClick={() => {
-              setTab(name);
-              setProfile(false);
-              setDetail(false);
-              setError('');
-              if (name === 'Alertas') {
-                run(app.readAlerts);
-              }
-            }}
+            onClick={() => navigateTo(name)}
           >
             {name}
           </button>
         ))}
       </nav>
+      {!modal && <Assistant onNavigate={navigateFromAssistant} />}
       {app.toast && (
         <div className="toast" role="status">
           {app.toast}
@@ -529,7 +596,7 @@ function WebApp() {
             {modal === 'station' && (
               <>
                 <h1>{station}</h1>
-                <p>Servicios del HTML · Andenes y llegadas simulados</p>
+                <p>Servicios de referencia · Llegadas estimadas</p>
                 {demoArrivals(station).map((a, i) => (
                   <article className="card" key={a.line}>
                     <h2>{a.line}</h2>
@@ -590,8 +657,8 @@ function WebApp() {
                     value={method}
                     onChange={e => setMethod(e.target.value as typeof method)}
                   >
-                    <option value="YAPE_DEMO">Yape · Simulado</option>
-                    <option value="CARD_DEMO">Tarjeta · Simulada</option>
+                    <option value="YAPE_DEMO">Yape · sin cobro</option>
+                    <option value="CARD_DEMO">Tarjeta · sin cobro</option>
                   </select>
                 </label>
                 {button('Recargar ahora · Demo', () =>

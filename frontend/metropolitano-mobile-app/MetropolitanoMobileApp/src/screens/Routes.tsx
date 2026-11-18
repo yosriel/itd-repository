@@ -1,21 +1,55 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useIsFocused } from '@react-navigation/native';
 import { useApp } from '../AppProvider';
+import { aiSupportedStations, requestAiRoute, Scenario, stationLabel, AiRouteResponse } from '../aiRoute';
 import { fixtures } from '../domain';
 import { DemoPlan, demoStations, planDemo } from '../demoTransit';
 import { RoutesStackParams } from '../navigationTypes';
 import { Button, Card, Heading, Page, Pill, Sub } from '../ui';
 
 export function Planner({ navigation }: NativeStackScreenProps<RoutesStackParams, 'Planner'>) {
+  const { mode } = useApp();
   const [origin, setOrigin] = useState('Naranjal');
   const [destination, setDestination] = useState('');
   const [selecting, setSelecting] = useState<'origin' | 'destination' | null>(null);
   const [result, setResult] = useState<DemoPlan | null>(null);
+  const [aiResult, setAiResult] = useState<AiRouteResponse | null>(null);
+  const [scenario, setScenario] = useState<Scenario>('peak');
+  const [incident, setIncident] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [searched, setSearched] = useState(false);
+  async function searchRoute() {
+    setLoading(true);
+    setError('');
+    setAiResult(null);
+    try {
+      if (mode === 'connected') {
+        const prediction = await requestAiRoute(origin, destination, scenario, incident);
+        setAiResult(prediction);
+        setResult({
+          origin,
+          destinoNombre: destination,
+          tiempo: `${prediction.costo_grafo_minutos} min · A*`,
+          linea: 'Ruta calculada por A*',
+          paradas: prediction.ruta.map(stationLabel),
+        });
+      } else {
+        setResult(planDemo(origin, destination));
+      }
+      setSearched(true);
+    } catch (e) {
+      setResult(null);
+      setSearched(true);
+      setError(e instanceof Error ? e.message : 'No se pudo consultar la API de IA.');
+    } finally {
+      setLoading(false);
+    }
+  }
   return (
-    <Page title="Planea tu ruta" subtitle="Recorridos de demostración">
+    <Page title="Planea tu ruta" subtitle="Consulta tu recorrido">
       <Sub>Origen</Sub>
       <Button title={origin} variant="ghost" onPress={() => setSelecting('origin')} />
       <Sub>¿A dónde vas?</Sub>
@@ -26,17 +60,36 @@ export function Planner({ navigation }: NativeStackScreenProps<RoutesStackParams
           <View className="max-h-[75%] w-full max-w-[480px] self-center rounded-t-3xl bg-white p-5">
             <Heading>Selecciona {selecting === 'origin' ? 'origen' : 'destino'}</Heading>
             <ScrollView className="my-4">
-              {demoStations.map(station => <Pressable key={station} accessibilityRole="button" onPress={() => { if (selecting === 'origin') { setOrigin(station); } else { setDestination(station); } setSelecting(null); setResult(null); setSearched(false); }} className="min-h-[48px] justify-center border-b border-line py-3"><Text className="font-sans text-[14px] text-ink">{station}</Text></Pressable>)}
+              {(mode === 'connected' ? aiSupportedStations : demoStations).map(station => <Pressable key={station} accessibilityRole="button" onPress={() => { if (selecting === 'origin') { setOrigin(station); } else { setDestination(station); } setSelecting(null); setResult(null); setAiResult(null); setSearched(false); }} className="min-h-[48px] justify-center border-b border-line py-3"><Text className="font-sans text-[14px] text-ink">{station}</Text></Pressable>)}
             </ScrollView>
             <Button title="Cancelar" variant="ghost" onPress={() => setSelecting(null)} />
           </View>
         </View>
       </Modal>
-      <Button title="Buscar ruta" disabled={!destination || destination === origin} onPress={() => { setResult(planDemo(origin, destination)); setSearched(true); }} />
+      {mode === 'connected' && <View className="gap-2 rounded-xl bg-[#F0F5F8] p-3">
+        <Sub>Escenario de predicción · Datos sintéticos</Sub>
+        <Sub>La distancia, el servicio y la frecuencia restante son supuestos de ejemplo.</Sub>
+        <View className="flex-row gap-2">
+          <Button title="Hora punta" variant={scenario === 'peak' ? 'amber' : 'ghost'} onPress={() => { setScenario('peak'); setResult(null); setAiResult(null); }} />
+          <Button title="Hora valle" variant={scenario === 'offpeak' ? 'amber' : 'ghost'} onPress={() => { setScenario('offpeak'); setResult(null); setAiResult(null); }} />
+        </View>
+        <View className="flex-row items-center justify-between">
+          <Sub>Incluir incidencia en Caquetá</Sub>
+          <Switch accessibilityLabel="Incluir incidencia en Caquetá" value={incident} onValueChange={value => { setIncident(value); setResult(null); setAiResult(null); }} />
+        </View>
+      </View>}
+      <Button title={loading ? 'Calculando…' : 'Buscar ruta'} disabled={!destination || destination === origin || loading} onPress={searchRoute} />
       {origin === destination && <Sub>Elige dos estaciones diferentes.</Sub>}
-      {searched && !result && <Sub>No hay una conexión en el catálogo de demostración.</Sub>}
-      {result && <Card><View className="gap-3"><Heading>{origin} → {destination}</Heading><Sub>{result.linea}</Sub><Heading>{result.tiempo} · {result.transbordos} transbordos</Heading><Button title="Ver ruta trazada" variant="amber" onPress={() => navigation.navigate('Detail', { plan: result })} /></View></Card>}
-      <Sub>Conexiones y tiempos aproximados derivados del prototipo; no representan rutas operativas verificadas.</Sub>
+      {error !== '' && <Text accessibilityRole="alert" className="font-sans text-[13px] text-[#9F211B]">{error}</Text>}
+      {searched && !result && error === '' && <Sub>No se encontró una ruta entre estas estaciones.</Sub>}
+      {result && <Card><View className="gap-3"><Heading>{origin} → {destination}</Heading><Sub>{result.linea}</Sub><Heading>{result.tiempo}{result.transbordos === undefined ? '' : ` · ${result.transbordos} transbordos`}</Heading><Button title="Ver ruta trazada" variant="amber" onPress={() => navigation.navigate('Detail', { plan: result })} /></View></Card>}
+      {aiResult && <Card><View className="gap-2">
+        <Heading>Predicción de IA</Heading>
+        <Sub>ETA Ridge: {aiResult.eta_modelo_minutos} min. Es distinta del costo A*.</Sub>
+        <Sub>Saturación: {aiResult.saturacion_critica ? 'crítica' : 'normal'} · probabilidad XGBoost: {(aiResult.probabilidad_saturacion * 100).toFixed(1)}%</Sub>
+        <Sub>La ruta, el ETA y la alerta se estiman con datos sintéticos, no en tiempo real.</Sub>
+      </View></Card>}
+      <Sub>Estimaciones de referencia; no hay horarios en vivo disponibles.</Sub>
     </Page>
   );
 }
@@ -78,18 +131,18 @@ export function Detail({
     <Page
       title={`${plan.origin} → ${plan.destinoNombre}`}
       back={() => navigation.goBack()}
-      subtitle="Esquema de paradas · No es un mapa geográfico"
+      subtitle="Estaciones del recorrido"
     >
       <View className="gap-3 rounded-[18px] bg-navy p-5">
         <Text className="font-sans text-[24px] font-bold text-white">
           {plan.tiempo}
         </Text>
-        <Pill status="amber" label={`${plan.transbordos} transbordos`} />
+        <Pill status="amber" label={plan.transbordos === undefined ? 'Transbordos no modelados' : `${plan.transbordos} transbordos`} />
         <Text className="font-sans text-[12px] text-white">{plan.linea}</Text>
       </View>
       <Heading>Próxima parada</Heading>
       <Pill
-        label={`Llegada simulada ${Math.floor(seconds / 60)}:${String(
+        label={`Cuenta atrás ${Math.floor(seconds / 60)}:${String(
           seconds % 60,
         ).padStart(2, '0')}`}
       />
@@ -119,7 +172,7 @@ export function Detail({
         ))}
       </Card>
       <Button
-        title={running ? 'Viaje en curso…' : 'Iniciar viaje simulado'}
+        title={running ? 'Recorrido en curso…' : 'Iniciar recorrido guiado'}
         disabled={running}
         onPress={() => {
           setIndex(0);
@@ -128,7 +181,7 @@ export function Detail({
       />
       {running && (
         <Button
-          title="Cancelar simulación"
+          title="Detener recorrido"
           variant="ghost"
           onPress={() => {
             setRunning(false);
@@ -136,11 +189,7 @@ export function Detail({
           }}
         />
       )}
-      <Sub>
-        Esta animación no sigue un bus, no cobra un pasaje ni modifica el
-        historial de viajes. Al salir se detiene.
-      </Sub>
+      <Sub>Explora el orden de las estaciones de tu recorrido.</Sub>
     </Page>
   );
 }
-

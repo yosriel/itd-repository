@@ -27,6 +27,20 @@ public class DemoService {
     }
     public record ProfileView(String fullName, String phone, String dni, String email, long version) {}
     public record RechargeView(String id, String amount, String method, String balanceAfter, String createdAt, String dataMode) {}
+    @Transactional(readOnly=true)
+    public String assistantContext(String accountId) {
+        var account = accounts.findById(accountId).orElseThrow();
+        var recentRecharges = recharges.findTop50ByAccountIdOrderByCreatedAtDesc(accountId).stream()
+            .limit(5).map(r -> Map.of("amount", r.amount.toPlainString(), "method", r.method,
+                "balanceAfter", r.balanceAfter.toPlainString())).toList();
+        return "Estaciones, rutas y alertas de ejemplo (no son datos en vivo): " +
+            Map.of("stations", fixtures.get("stations"), "alerts", fixtures.get("alerts"), "rutas", fixtures.get("rutas")) +
+            ". Las llegadas por andén son simuladas, derivadas de las líneas de las rutas y no representan horarios reales. " +
+            "La ubicación, el viaje, el QR, las notificaciones y las recargas son simulados. " +
+            "La recarga admite S/ 5, 10, 20 o 50 con Yape demo o tarjeta demo; no hay pasarela, cobro ni acreditación física. " +
+            "Saldo ficticio de esta sesión: S/ " + account.balance.toPlainString() +
+            ". Últimas recargas simuladas registradas (máximo 5): " + recentRecharges;
+    }
     private ProfileView profile(DemoAccount a) { return new ProfileView(a.fullName,a.phone,a.dni,a.email,a.version); }
     private RechargeView rechargeView(DemoRecharge r) { return new RechargeView(r.id,r.amount.toPlainString(),r.method,r.balanceAfter.toPlainString(),r.createdAt.toString(),"SIMULATED"); }
     @Transactional(readOnly=true)

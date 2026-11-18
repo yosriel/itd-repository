@@ -47,7 +47,7 @@ export function Auth() {
               Metropolitano{'\n'}Lima App
             </Text>
             <Text className="font-sans text-white">
-              Tu ruta, en una experiencia de demostración.
+              Tu ruta, en un solo lugar.
             </Text>
           </View>
           <Button
@@ -56,8 +56,8 @@ export function Auth() {
             onPress={() => setSplash(false)}
           />
           <Text className="text-center font-sans text-[11px] text-[#C7D5E2]">
-            Prototipo académico · Sin conexión oficial con ATU{'\n'}Fotografía
-            de referencia: Wikimedia Commons
+            Experiencia académica · Datos de referencia{'\n'}Fotografía:
+            Wikimedia Commons
           </Text>
         </ScrollView>
       </SafeAreaView>
@@ -80,7 +80,7 @@ export function Auth() {
             Inicia sesión
           </Text>
           <Sub>
-            Ingresa con tu número de celular y DNI para explorar el prototipo.
+            Ingresa con el celular y DNI registrados para esta presentación.
           </Sub>
           <Field
             label="Número de celular"
@@ -99,7 +99,7 @@ export function Auth() {
           {error !== '' && (
             <Text accessibilityRole="alert" className="font-sans text-critical">
               {error}
-              {'\n'}Comprueba que Spring esté iniciado o utiliza la demo sin
+              {'\n'}Comprueba que Spring esté iniciado o intenta ingresar sin
               conexión.
             </Text>
           )}
@@ -110,7 +110,7 @@ export function Auth() {
           />
           <Text onPress={() => enter(true)} accessibilityRole="button" className="text-center font-sans text-[12px] text-steel">Explorar sin conexión</Text>
           <Sub>
-            Prototipo académico · Datos simulados
+            Acceso de presentación · Datos de prueba
           </Sub>
         </ScrollView>
       </KeyboardAvoidingView>

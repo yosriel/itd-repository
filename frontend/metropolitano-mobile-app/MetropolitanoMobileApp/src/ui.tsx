@@ -63,7 +63,7 @@ export function Photo({ uri, height = 72 }: { uri: ImageSourcePropType; height?:
       resizeMode="cover"
       className="w-full"
       style={{ height }}
-      accessibilityLabel="Fotografía del prototipo de referencia"
+      accessibilityLabel="Fotografía de referencia del Metropolitano"
     />
   );
 }

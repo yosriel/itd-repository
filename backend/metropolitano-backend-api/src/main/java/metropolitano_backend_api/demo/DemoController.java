@@ -15,13 +15,20 @@ import org.springframework.web.server.ResponseStatusException;
 public class DemoController {
     private final DemoSessions sessions;
     private final DemoService service;
-    public DemoController(DemoSessions sessions, DemoService service) { this.sessions=sessions; this.service=service; }
+    private final AssistantService assistant;
+    public DemoController(DemoSessions sessions, DemoService service, AssistantService assistant) { this.sessions=sessions; this.service=service; this.assistant=assistant; }
     public record LoginInput(@Pattern(regexp="9[0-9]{8}") @NotBlank String phone, @Pattern(regexp="[0-9]{8}") @NotBlank String dni) {}
     public record ProfileInput(@NotBlank @Size(max=100) String fullName, @NotBlank @Pattern(regexp="9[0-9]{8}") String phone,
         @NotBlank @Pattern(regexp="[0-9]{8}") String dni, @NotBlank @Email @Size(max=254) String email, @PositiveOrZero long version) {}
     public record PreferencesInput(boolean notifications) {}
     public record RechargeInput(@NotNull @DecimalMin("5") @DecimalMax("50") @Digits(integer=2,fraction=2) BigDecimal amount,
         @NotBlank @Pattern(regexp="YAPE_DEMO|CARD_DEMO") String method) {}
+    public record AssistantInput(@NotBlank @Size(max=1000) String message) {}
+    @PostMapping("/assistant")
+    public Map<String,String> assistant(@RequestHeader(value="Authorization",required=false) String header,
+        @Valid @RequestBody AssistantInput input) {
+        return Map.of("reply", assistant.answer(sessions.accountId(header), input.message()));
+    }
     @PostMapping("/sessions")
     public Map<String,String> login(@Valid @RequestBody LoginInput input) {
         var a = service.login(input.phone(),input.dni());

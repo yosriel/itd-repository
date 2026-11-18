@@ -25,6 +25,7 @@ type AppContextValue = {
   saveProfile: (profile: Profile) => Promise<void>;
   setNotifications: (enabled: boolean) => Promise<void>;
   readAlerts: () => Promise<void>;
+  askAssistant: (message: string) => Promise<string>;
   recharge: (
     amount: number,
     method: Recharge['method'],
@@ -147,6 +148,15 @@ export function AppProvider({ children }: React.PropsWithChildren) {
       } finally {
         alertsLock.current = false;
       }
+    },
+    askAssistant: async message => {
+      if (mode !== 'connected' || !token.current) {
+        throw new Error('El asistente necesita una sesión conectada.');
+      }
+      const result = await request<{ reply: string }>(
+        '/assistant', token.current, 'POST', { message }, undefined, 45000,
+      );
+      return result.reply;
     },
     recharge: (amount, method, key) =>
       operation(async () => {

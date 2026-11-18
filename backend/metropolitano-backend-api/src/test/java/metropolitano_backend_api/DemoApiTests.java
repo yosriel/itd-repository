@@ -9,7 +9,10 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.JsonNode;
 import java.util.UUID;
 import java.util.concurrent.Executors;
+import metropolitano_backend_api.demo.DemoService;
+import metropolitano_backend_api.demo.DemoSessions;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -18,6 +21,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class DemoApiTests {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper mapper;
+    @Autowired DemoService service;
+    @Autowired DemoSessions sessions;
     private String phone() { return "9" + String.format("%08d", Math.abs(UUID.randomUUID().hashCode() % 100000000)); }
     private String login(String phone) throws Exception {
         var response=mvc.perform(post("/api/v1/demo/sessions").contentType("application/json")
@@ -70,5 +75,27 @@ class DemoApiTests {
         mvc.perform(patch("/api/v1/demo/preferences").header("Authorization",auth).contentType("application/json").content("{\"notifications\":false}")).andExpect(status().isNoContent());
         mvc.perform(post("/api/v1/demo/alerts/read-all").header("Authorization",auth)).andExpect(status().isNoContent());
         var persisted=state(login(phone));assertFalse(persisted.get("notifications").asBoolean());assertTrue(persisted.get("alertsRead").asBoolean());
+    }
+    @Test void assistantContextContainsOnlyThisAccountsSimulatedData() throws Exception {
+        var firstPhone = phone();
+        var first = login(firstPhone);
+        var second = login(phone());
+        recharge(first);
+        var firstContext = service.assistantContext(sessions.accountId(first));
+        var secondContext = service.assistantContext(sessions.accountId(second));
+        assertTrue(firstContext.contains("22.50"));
+        assertTrue(firstContext.contains("CARD_DEMO"));
+        assertFalse(secondContext.contains("22.50"));
+        assertTrue(secondContext.contains("12.50"));
+        assertFalse(firstContext.contains(firstPhone));
+        assertFalse(firstContext.contains("76543210"));
+        assertTrue(firstContext.contains("Naranjal"));
+    }
+    @Test void assistantReportsMissingConfiguration() throws Exception {
+        var key = System.getenv("GEMINI_API_KEY");
+        assumeTrue(key == null || key.isBlank(), "Requires GEMINI_API_KEY to be unset");
+        mvc.perform(post("/api/v1/demo/assistant").header("Authorization", login(phone()))
+            .contentType("application/json").content("{\"message\":\"Hola\"}"))
+            .andExpect(status().isServiceUnavailable());
     }
 }
