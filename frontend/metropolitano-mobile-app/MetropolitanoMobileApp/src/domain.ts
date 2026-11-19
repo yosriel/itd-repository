@@ -1,4 +1,4 @@
-import fixtures from './data/fixtures.json';
+import type fixtures from './data/fixtures.json';
 export type RouteKey = keyof typeof fixtures.rutas;
 export type Profile = {
   fullName: string;
@@ -15,7 +15,11 @@ export type Recharge = {
   createdAt: string;
   dataMode: string;
 };
+export type Catalog = Pick<typeof fixtures, 'stations' | 'alerts' | 'historial'> & {
+  rutas: Record<string, typeof fixtures.rutas.central>;
+};
 export type AppState = {
+  fixtures: Catalog;
   profile: Profile;
   balance: string;
   notifications: boolean;
@@ -24,14 +28,15 @@ export type AppState = {
   dataMode: string;
 };
 export const initialState = (): AppState => ({
+  fixtures: { stations: [], alerts: [], historial: [], rutas: {} },
   profile: {
-    fullName: 'Juan Carlos Quispe',
-    phone: '987654321',
-    dni: '76543210',
-    email: 'juancarlos@example.com',
+    fullName: '',
+    phone: '',
+    dni: '',
+    email: '',
     version: 0,
   },
-  balance: '12.50',
+  balance: '0.00',
   notifications: true,
   alertsRead: false,
   recharges: [],
@@ -66,4 +71,3 @@ export function validateProfile(profile: Profile): string | undefined {
 export function money(value: string | number) {
   return `S/ ${Number(value).toFixed(2)}`;
 }
-export { fixtures };

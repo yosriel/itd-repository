@@ -1,3 +1,4 @@
+import { useFonts } from 'expo-font';
 import './global.css';
 import React from 'react';
 import { StatusBar, Text, View } from 'react-native';
@@ -128,6 +129,11 @@ function tabOptions({
   };
 }
 export default function App() {
+  const [loaded, error] = useFonts({
+    Manrope: require('./assets/fonts/Manrope.ttf'),
+    Fraunces: require('./assets/fonts/Fraunces.ttf'),
+  });
+  if (!loaded && !error) { return null; }
   return (
     <SafeAreaProvider>
       <AppProvider>

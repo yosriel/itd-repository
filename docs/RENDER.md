@@ -1,5 +1,7 @@
 # Publicar Metropolitano en Render
 
+> Documento histórico de la entrega anterior. Para reproducir la versión Expo conectada, consulta el [README vigente](../README.md) y la [entrega APF3](APF3_ENTREGA.md).
+
 Render puede servir la interfaz como Static Site gratis y las APIs como dos
 servicios web gratuitos. El sitio estático no duerme. Los servicios gratuitos
 de API sí pueden apagarse tras 15 minutos sin tráfico y tardar alrededor de un

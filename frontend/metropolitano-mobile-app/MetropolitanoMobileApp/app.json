@@ -1,4 +1,23 @@
 {
-  "name": "MetropolitanoMobileApp",
-  "displayName": "MetropolitanoMobileApp"
+  "expo": {
+    "name": "Metropolitano Lima",
+    "slug": "metropolitano-lima",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "android": {
+      "package": "com.metropolitanomobileapp",
+      "versionCode": 1,
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ]
+    },
+    "ios": {
+      "bundleIdentifier": "com.metropolitanomobileapp"
+    },
+    "plugins": [
+      "./scripts/android-network.cjs"
+    ]
+  }
 }

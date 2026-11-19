@@ -2,12 +2,12 @@ FROM python:3.13-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 ENV PORT=10000
 WORKDIR /app
-COPY apf3/requirements.txt /app/requirements.txt
+COPY requirements.txt /app/requirements.txt
 RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --no-cache-dir -r /app/requirements.txt \
     && useradd --create-home appuser
-COPY apf3 /app/apf3
+COPY . /app/apf3
 RUN OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m apf3.experiment > /tmp/apf3-training.log \
     && rm -rf /app/apf3/data /tmp/apf3-training.log
 USER appuser

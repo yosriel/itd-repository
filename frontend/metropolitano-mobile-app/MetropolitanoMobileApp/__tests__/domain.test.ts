@@ -1,11 +1,12 @@
+import fixtures from '../src/data/fixtures.json';
 import {
-  fixtures,
   initialState,
   initials,
   validateProfile,
 } from '../src/domain';
 test('profile rejects invalid personal data and preserves canonical data', () => {
-  const saved = initialState().profile;
+  const saved = { ...initialState().profile, fullName: 'Juan Carlos Quispe',
+    phone: '987654321', dni: '76543210', email: 'demo@example.test' };
   const draft = { ...saved, fullName: 'Ana Torres', email: 'invalid' };
   expect(validateProfile(draft)).toBe('Ingresa un correo válido');
   expect(saved.fullName).toBe('Juan Carlos Quispe');

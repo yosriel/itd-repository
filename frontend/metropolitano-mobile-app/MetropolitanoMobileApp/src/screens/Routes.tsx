@@ -4,13 +4,11 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useIsFocused } from '@react-navigation/native';
 import { useApp } from '../AppProvider';
 import { aiSupportedStations, requestAiRoute, Scenario, stationLabel, AiRouteResponse } from '../aiRoute';
-import { fixtures } from '../domain';
-import { DemoPlan, demoStations, planDemo } from '../demoTransit';
+import { DemoPlan } from '../demoTransit';
 import { RoutesStackParams } from '../navigationTypes';
 import { Button, Card, Heading, Page, Pill, Sub } from '../ui';
 
 export function Planner({ navigation }: NativeStackScreenProps<RoutesStackParams, 'Planner'>) {
-  const { mode } = useApp();
   const [origin, setOrigin] = useState('Naranjal');
   const [destination, setDestination] = useState('');
   const [selecting, setSelecting] = useState<'origin' | 'destination' | null>(null);
@@ -26,19 +24,15 @@ export function Planner({ navigation }: NativeStackScreenProps<RoutesStackParams
     setError('');
     setAiResult(null);
     try {
-      if (mode === 'connected') {
-        const prediction = await requestAiRoute(origin, destination, scenario, incident);
-        setAiResult(prediction);
-        setResult({
-          origin,
-          destinoNombre: destination,
-          tiempo: `${prediction.costo_grafo_minutos} min · A*`,
-          linea: 'Ruta calculada por A*',
-          paradas: prediction.ruta.map(stationLabel),
-        });
-      } else {
-        setResult(planDemo(origin, destination));
-      }
+      const prediction = await requestAiRoute(origin, destination, scenario, incident);
+      setAiResult(prediction);
+      setResult({
+        origin,
+        destinoNombre: destination,
+        tiempo: `${prediction.costo_grafo_minutos} min · A*`,
+        linea: 'Ruta calculada por A*',
+        paradas: prediction.ruta.map(stationLabel),
+      });
       setSearched(true);
     } catch (e) {
       setResult(null);
@@ -60,13 +54,13 @@ export function Planner({ navigation }: NativeStackScreenProps<RoutesStackParams
           <View className="max-h-[75%] w-full max-w-[480px] self-center rounded-t-3xl bg-white p-5">
             <Heading>Selecciona {selecting === 'origin' ? 'origen' : 'destino'}</Heading>
             <ScrollView className="my-4">
-              {(mode === 'connected' ? aiSupportedStations : demoStations).map(station => <Pressable key={station} accessibilityRole="button" onPress={() => { if (selecting === 'origin') { setOrigin(station); } else { setDestination(station); } setSelecting(null); setResult(null); setAiResult(null); setSearched(false); }} className="min-h-[48px] justify-center border-b border-line py-3"><Text className="font-sans text-[14px] text-ink">{station}</Text></Pressable>)}
+              {aiSupportedStations.map(station => <Pressable key={station} accessibilityRole="button" onPress={() => { if (selecting === 'origin') { setOrigin(station); } else { setDestination(station); } setSelecting(null); setResult(null); setAiResult(null); setSearched(false); }} className="min-h-[48px] justify-center border-b border-line py-3"><Text className="font-sans text-[14px] text-ink">{station}</Text></Pressable>)}
             </ScrollView>
             <Button title="Cancelar" variant="ghost" onPress={() => setSelecting(null)} />
           </View>
         </View>
       </Modal>
-      {mode === 'connected' && <View className="gap-2 rounded-xl bg-[#F0F5F8] p-3">
+      <View className="gap-2 rounded-xl bg-[#F0F5F8] p-3">
         <Sub>Escenario de predicción · Datos sintéticos</Sub>
         <Sub>La distancia, el servicio y la frecuencia restante son supuestos de ejemplo.</Sub>
         <View className="flex-row gap-2">
@@ -77,7 +71,7 @@ export function Planner({ navigation }: NativeStackScreenProps<RoutesStackParams
           <Sub>Incluir incidencia en Caquetá</Sub>
           <Switch accessibilityLabel="Incluir incidencia en Caquetá" value={incident} onValueChange={value => { setIncident(value); setResult(null); setAiResult(null); }} />
         </View>
-      </View>}
+      </View>
       <Button title={loading ? 'Calculando…' : 'Buscar ruta'} disabled={!destination || destination === origin || loading} onPress={searchRoute} />
       {origin === destination && <Sub>Elige dos estaciones diferentes.</Sub>}
       {error !== '' && <Text accessibilityRole="alert" className="font-sans text-[13px] text-[#9F211B]">{error}</Text>}
@@ -97,8 +91,8 @@ export function Detail({
   route,
   navigation,
 }: NativeStackScreenProps<RoutesStackParams, 'Detail'>) {
-  const plan = route.params.plan ?? { ...fixtures.rutas[route.params.routeKey!], origin: 'Naranjal' };
-  const { notify } = useApp();
+  const { state, notify } = useApp();
+  const plan = route.params.plan ?? { ...state.fixtures.rutas[route.params.routeKey!], origin: 'Naranjal' };
   const focused = useIsFocused();
   const [seconds, setSeconds] = useState(180);
   const [index, setIndex] = useState(0);

@@ -2,10 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import qrcode from 'qrcode-generator';
 import { AppProvider, useApp } from '../src/AppProvider';
-import { fixtures, money, initials } from '../src/domain';
+import { money, initials } from '../src/domain';
 import {
-  demoStations,
-  planDemo,
   demoArrivals,
   DemoPlan,
 } from '../src/demoTransit';
@@ -97,10 +95,6 @@ function WebApp() {
     setPlan(null);
     setAiPrediction(null);
     setError('');
-    if (app.mode !== 'connected') {
-      setPlan(planDemo(origin, destination));
-      return;
-    }
     setRouteLoading(true);
     try {
       const prediction = await requestAiRoute(origin, destination, aiScenario, aiIncident);
@@ -271,8 +265,7 @@ function WebApp() {
                   <small>
                     La contraseña se guarda como hash. Esta versión no verifica
                     la titularidad del celular ni del correo y no es una cuenta
-                    de producción. El perfil de presentación puede borrarse
-                    cuando Render reinicie el servicio.
+                    de producción.
                   </small>
                 </>
               )}
@@ -307,14 +300,6 @@ function WebApp() {
                 >
                   Entrar a la presentación
                 </button>
-                {button(
-                  'Explorar sin conexión',
-                  () =>
-                    run(() =>
-                      app.login(phone || '987654321', dni || '76543210', true),
-                    ),
-                  true,
-                )}
               </>
             )}
             {error && (
@@ -332,7 +317,7 @@ function WebApp() {
     <main className="shell">
       <header>
         <small>
-          {app.mode === 'connected' ? 'Conectado' : 'Sin conexión'}
+          Conectado
         </small>
         {tab === 'Inicio' ? (
           <>
@@ -380,7 +365,7 @@ function WebApp() {
                 : 'Ver ejemplo de ubicación'}
             </button>
             <h2>Estaciones cercanas</h2>
-            {fixtures.stations
+            {app.state.fixtures.stations
               .filter(s => s.name.toLowerCase().includes(query.toLowerCase()))
               .map(s => (
                 <button
@@ -450,7 +435,7 @@ function WebApp() {
                     setAiPrediction(null);
                   }}
                 >
-                  {(app.mode === 'connected' ? aiSupportedStations : demoStations).map(s => (
+                  {aiSupportedStations.map(s => (
                     <option key={s}>{s}</option>
                   ))}
                 </select>
@@ -466,7 +451,7 @@ function WebApp() {
                   }}
                 >
                   <option value="">Selecciona una estación</option>
-                  {(app.mode === 'connected' ? aiSupportedStations : demoStations).map(s => (
+                  {aiSupportedStations.map(s => (
                     <option key={s}>{s}</option>
                   ))}
                 </select>
@@ -554,7 +539,7 @@ function WebApp() {
                 }
               />
             </article>
-            {fixtures.alerts.map(a => (
+            {app.state.fixtures.alerts.map(a => (
               <article className={`card alert ${a.level}`} key={a.title}>
                 <h2>{a.title}</h2>
                 <p>{a.body}</p>
@@ -653,7 +638,7 @@ function WebApp() {
                   <span className="green">+{money(r.amount)}</span>
                 </article>
               ))}
-              {fixtures.historial.map((r, i) => (
+              {app.state.fixtures.historial.map((r, i) => (
                 <article className="card row" key={i}>
                   <span>
                     <strong>{r.desc}</strong>
@@ -731,7 +716,7 @@ function WebApp() {
               <>
                 <h1>{station}</h1>
                 <p>Servicios de referencia · Llegadas estimadas</p>
-                {demoArrivals(station).map((a, i) => (
+                {demoArrivals(station, app.state.fixtures.rutas).map((a, i) => (
                   <article className="card" key={a.line}>
                     <h2>{a.line}</h2>
                     <small>{a.platform}</small>
@@ -926,8 +911,12 @@ function WebApp() {
     </main>
   );
 }
+function SessionView() {
+  const { mode } = useApp();
+  return <WebApp key={mode ?? 'login'} />;
+}
 createRoot(document.getElementById('root')!).render(
   <AppProvider>
-    <WebApp />
+    <SessionView />
   </AppProvider>,
 );

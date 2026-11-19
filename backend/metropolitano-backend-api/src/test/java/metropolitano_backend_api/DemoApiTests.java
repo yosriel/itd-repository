@@ -23,6 +23,19 @@ class DemoApiTests {
     @Autowired ObjectMapper mapper;
     @Autowired DemoService service;
     @Autowired DemoSessions sessions;
+    @Autowired org.springframework.jdbc.core.JdbcTemplate db;
+
+    @Test void otherInstanceCanReadAndRevokeSession() throws Exception {
+        String auth = createAccount(phone());
+        var other = new DemoSessions(db);
+        assertEquals(sessions.accountId(auth), other.accountId(auth));
+        assertEquals(0, db.queryForObject(
+            "SELECT COUNT(*) FROM demo_session WHERE token_hash=?", Integer.class, auth.substring(7)));
+        other.revoke(auth);
+        mvc.perform(get("/api/v1/demo/state").header("Authorization", auth))
+            .andExpect(status().isUnauthorized());
+    }
+
     private String phone() { return "9" + String.format("%08d", Math.abs(UUID.randomUUID().hashCode() % 100000000)); }
     private String createAccount(String phone) throws Exception {
         var response=mvc.perform(post("/api/v1/demo/register").contentType("application/json")
