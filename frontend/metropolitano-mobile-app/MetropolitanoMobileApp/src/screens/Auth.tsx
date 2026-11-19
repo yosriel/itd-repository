@@ -99,16 +99,20 @@ export function Auth() {
           {error !== '' && (
             <Text accessibilityRole="alert" className="font-sans text-critical">
               {error}
-              {'\n'}Comprueba que Spring esté iniciado o intenta ingresar sin
-              conexión.
+              {'\n'}Si el servidor estaba inactivo, espera un momento y vuelve
+              a intentarlo; también puedes explorar sin conexión.
             </Text>
           )}
           <Button
-            title={busy ? 'Ingresando…' : 'Ingresar'}
+            title={busy ? 'Conectando con el servidor…' : 'Ingresar'}
             onPress={() => enter()}
             disabled={busy}
           />
           <Text onPress={() => enter(true)} accessibilityRole="button" className="text-center font-sans text-[12px] text-steel">Explorar sin conexión</Text>
+          <Sub>
+            La primera conexión después de un tiempo sin uso puede tardar más
+            mientras el servidor se inicia.
+          </Sub>
           <Sub>
             Acceso de presentación · Datos de prueba
           </Sub>

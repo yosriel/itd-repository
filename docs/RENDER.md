@@ -37,6 +37,13 @@ Static Site que copiaste, incluyendo `https://` y sin una barra final.
   - `SPRING_PROFILES_ACTIVE` = `demo`
   - `DEMO_DB_URL` = `jdbc:h2:mem:metropolitano-demo;DB_CLOSE_DELAY=-1`
   - `CORS_ALLOWED_ORIGINS` = origen exacto del Static Site.
+  - `GEMINI_API_KEY` = clave de Gemini configurada como secreto en el entorno de Render.
+
+La clave de Gemini pertenece únicamente al servicio Spring. Créala en Google AI
+Studio y guárdala en Render como variable secreta; no la pongas en `VITE_*`, en
+el código del frontend ni en el repositorio. Sin esta variable, el asistente
+responde `503` con el mensaje de que no está configurado. Después de guardarla,
+vuelve a desplegar Spring y prueba el asistente con una sesión conectada.
 
 La base H2 en memoria se reinicia cuando el servicio se reinicia o duerme; no
 uses esta configuración para guardar datos que deban conservarse.

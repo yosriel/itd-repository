@@ -15,7 +15,7 @@ export async function request<T>(
   method = 'GET',
   body?: unknown,
   key?: string,
-  timeoutMs = 10000,
+  timeoutMs = 120000,
   baseUrl = API_URL,
 ): Promise<T> {
   const controller = new AbortController();
@@ -42,7 +42,9 @@ export async function request<T>(
     return response.status === 204 ? (undefined as T) : await response.json();
   } catch (error) {
     if (controller.signal.aborted) {
-      throw new Error('La solicitud tardó demasiado. Intenta nuevamente.');
+      throw new Error(
+        'La conexión tardó demasiado. El servidor puede estar iniciándose; espera un momento y vuelve a intentarlo.',
+      );
     }
     throw error;
   } finally {
@@ -51,5 +53,5 @@ export async function request<T>(
 }
 
 export function requestAi<T>(path: string, body: unknown): Promise<T> {
-  return request<T>(path, undefined, 'POST', body, undefined, 15000, AI_API_URL);
+  return request<T>(path, undefined, 'POST', body, undefined, 120000, AI_API_URL);
 }

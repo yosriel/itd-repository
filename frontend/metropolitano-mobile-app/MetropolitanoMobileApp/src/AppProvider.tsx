@@ -154,7 +154,7 @@ export function AppProvider({ children }: React.PropsWithChildren) {
         throw new Error('El asistente necesita una sesión conectada.');
       }
       const result = await request<{ reply: string }>(
-        '/assistant', token.current, 'POST', { message }, undefined, 45000,
+        '/assistant', token.current, 'POST', { message }, undefined, 120000,
       );
       return result.reply;
     },
