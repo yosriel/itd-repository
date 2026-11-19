@@ -47,6 +47,7 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/metropolitano-mobile-app/MetropolitanoMobileApp/package-lock.json
       - run: npm ci
+      - run: npm audit --audit-level=high
       - run: npx expo install --check
       - run: npx tsc --noEmit && npx tsc -p web --noEmit
       - run: npm run lint && npm test -- --runInBand
@@ -68,8 +69,24 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+        with:
+          log-accepted-android-sdk-licenses: false
+          packages: 'platform-tools platforms;android-37.0 build-tools;37.0.0 ndk;27.1.12297006 cmake;3.22.1 cmake;3.30.5'
       - run: npm ci
+      - name: Comprobar URLs del APK público
+        if: vars.ENABLE_VERCEL_DEPLOY == 'true'
+        env:
+          EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
+          EXPO_PUBLIC_AI_URL: ${{ vars.EXPO_PUBLIC_AI_URL }}
+        run: |
+          node --input-type=module <<'JS'
+          for (const name of ['EXPO_PUBLIC_API_URL', 'EXPO_PUBLIC_AI_URL']) {
+            if (!URL.canParse(process.env[name]) || new URL(process.env[name]).protocol !== 'https:') {
+              throw new Error(`Configura una URL HTTPS para ${name}`);
+            }
+          }
+          JS
       - run: npm run apk
         env:
           EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
@@ -97,11 +114,18 @@ jobs:
           APF3_PROJECT: ${{ vars.VERCEL_APF3_PROJECT_ID }}
           WEB_PROJECT: ${{ vars.VERCEL_WEB_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
+          EXPO_PUBLIC_AI_URL: ${{ vars.EXPO_PUBLIC_AI_URL }}
         run: |
           set -eu
           deploy() {
             VERCEL_PROJECT_ID="$1" npx --yes vercel@66.2.0 deploy . --prod --yes --token "$VERCEL_TOKEN"
           }
+          health() {
+            curl --fail --silent --show-error --retry 6 --retry-all-errors --retry-delay 5 --max-time 20 "$1" > /dev/null
+          }
           deploy "$SPRING_PROJECT"
+          health "${EXPO_PUBLIC_API_URL%/api/v1/demo}/actuator/health"
           deploy "$APF3_PROJECT"
+          health "${EXPO_PUBLIC_AI_URL%/}/health"
           deploy "$WEB_PROJECT"
