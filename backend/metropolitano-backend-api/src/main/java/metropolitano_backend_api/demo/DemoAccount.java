@@ -13,6 +13,8 @@ public class DemoAccount {
     public String phone;
     public String dni;
     public String email = "juancarlos@example.com";
+    @Column(name="password_hash", length=100)
+    public String passwordHash;
     public BigDecimal balance = new BigDecimal("12.50");
     public boolean notifications = true;
     @Column(name="alerts_read") public boolean alertsRead;

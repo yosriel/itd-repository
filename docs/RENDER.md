@@ -45,6 +45,14 @@ el código del frontend ni en el repositorio. Sin esta variable, el asistente
 responde `503` con el mensaje de que no está configurado. Después de guardarla,
 vuelve a desplegar Spring y prueba el asistente con una sesión conectada.
 
+La aplicación ofrece registro académico en `POST /api/v1/demo/register` e
+ingreso mediante `POST /api/v1/demo/sessions`; las contraseñas se guardan con
+BCrypt. El acceso de presentación está separado en
+`POST /api/v1/demo/sessions/presentation`. No hay verificación de correo/SMS,
+recuperación de contraseña ni defensa de producción contra intentos masivos.
+Usa datos de prueba y no reutilices contraseñas personales. Con la base H2 en
+memoria configurada aquí, las cuentas se borran al reiniciar o suspender Spring.
+
 La base H2 en memoria se reinicia cuando el servicio se reinicia o duerme; no
 uses esta configuración para guardar datos que deban conservarse.
 

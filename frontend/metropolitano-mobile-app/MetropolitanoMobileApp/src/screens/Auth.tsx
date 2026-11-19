@@ -16,17 +16,41 @@ import { assets, Button, Field, Logo, Photo, Sub } from '../ui';
 
 export function Auth() {
   const [splash, setSplash] = useState(true);
-  const [phone, setPhone] = useState('987654321');
-  const [dni, setDni] = useState('76543210');
+  const [registering, setRegistering] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [dni, setDni] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [error, setError] = useState('');
-  const { login, busy } = useApp();
+  const { login, loginPresentation, register, busy } = useApp();
   const { height } = useWindowDimensions();
   async function enter(offline = false) {
     setError('');
     try {
-      await login(phone, dni, offline);
+      if (registering) {
+        if (password !== passwordConfirmation) {
+          throw new Error('Las contraseñas no coinciden');
+        }
+        await register({ fullName, phone, dni, email, password });
+      } else {
+        await login(
+          offline ? phone || '987654321' : phone,
+          offline ? dni || '76543210' : password,
+          offline,
+        );
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo ingresar');
+    }
+  }
+  async function enterPresentation() {
+    setError('');
+    try {
+      await loginPresentation();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo abrir la presentación');
     }
   }
   if (splash) {
@@ -77,11 +101,21 @@ export function Auth() {
             <Logo wordmark />
           </View>
           <Text className="font-title text-[24px] text-navy">
-            Inicia sesión
+            {registering ? 'Crear cuenta académica' : 'Inicia sesión'}
           </Text>
           <Sub>
-            Ingresa con el celular y DNI registrados para esta presentación.
+            {registering
+              ? 'Crea un perfil para probar la aplicación. No uses contraseñas ni datos personales que utilices en otros servicios.'
+              : 'Ingresa con el celular y contraseña de tu cuenta académica.'}
           </Sub>
+          {registering && (
+            <Field
+              label="Nombre completo"
+              value={fullName}
+              onChange={setFullName}
+              maxLength={100}
+            />
+          )}
           <Field
             label="Número de celular"
             value={phone}
@@ -89,13 +123,49 @@ export function Auth() {
             numeric
             maxLength={9}
           />
+          {registering && (
+            <>
+              <Field
+                label="DNI (dato académico de prueba)"
+                value={dni}
+                onChange={setDni}
+                numeric
+                maxLength={8}
+              />
+              <Field
+                label="Correo electrónico"
+                value={email}
+                onChange={setEmail}
+                email
+                maxLength={254}
+              />
+            </>
+          )}
           <Field
-            label="DNI"
-            value={dni}
-            onChange={setDni}
-            numeric
-            maxLength={8}
+            label="Contraseña"
+            value={password}
+            onChange={setPassword}
+            secure
+            passwordType={registering ? 'newPassword' : 'password'}
+            maxLength={72}
           />
+          {registering && (
+            <>
+              <Field
+                label="Confirmar contraseña"
+                value={passwordConfirmation}
+                onChange={setPasswordConfirmation}
+                secure
+                maxLength={72}
+              />
+              <Sub>
+                La contraseña se guarda como hash. Esta versión no verifica la
+                titularidad del celular ni del correo y no es una cuenta de
+                producción. El perfil de presentación puede borrarse cuando
+                Render reinicie el servicio.
+              </Sub>
+            </>
+          )}
           {error !== '' && (
             <Text accessibilityRole="alert" className="font-sans text-critical">
               {error}
@@ -104,11 +174,54 @@ export function Auth() {
             </Text>
           )}
           <Button
-            title={busy ? 'Conectando con el servidor…' : 'Ingresar'}
-            onPress={() => enter()}
+            title={
+              busy
+                ? 'Conectando con el servidor…'
+                : registering
+                  ? 'Crear cuenta'
+                  : 'Ingresar'
+            }
+            onPress={() => enter(false)}
             disabled={busy}
           />
-          <Text onPress={() => enter(true)} accessibilityRole="button" className="text-center font-sans text-[12px] text-steel">Explorar sin conexión</Text>
+          <Text
+            onPress={() => {
+              setError('');
+              setRegistering(value => !value);
+            }}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: busy }}
+            className="text-center font-sans text-[13px] font-bold text-steel"
+          >
+            {registering
+              ? 'Ya tengo una cuenta · Iniciar sesión'
+              : '¿No tienes cuenta? Crear cuenta'}
+          </Text>
+          {!registering && (
+            <>
+              <Button
+                title="Entrar a la presentación"
+                variant="ghost"
+                onPress={enterPresentation}
+                disabled={busy}
+              />
+              <Text
+                onPress={() => {
+                  if (!phone) {
+                    setPhone('987654321');
+                  }
+                  if (!dni) {
+                    setDni('76543210');
+                  }
+                  enter(true);
+                }}
+                accessibilityRole="button"
+                className="text-center font-sans text-[12px] text-steel"
+              >
+                Explorar sin conexión
+              </Text>
+            </>
+          )}
           <Sub>
             La primera conexión después de un tiempo sin uso puede tardar más
             mientras el servidor se inicia.

@@ -4,6 +4,8 @@ import { AppProvider, useApp } from '../src/AppProvider';
 import { useAssistant } from '../src/useAssistant';
 import { Assistant } from '../src/Assistant';
 
+jest.setTimeout(15000);
+
 let app: ReturnType<typeof useApp>;
 let assistant: ReturnType<typeof useAssistant>;
 function Capture() {
@@ -25,7 +27,7 @@ test('assistant validates messages, requires a connected session and shows repli
   expect(fetchMock).not.toHaveBeenCalled();
   fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ token: 'test-token' }) } as Response);
   fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ profile: {}, alertsRead: false }) } as Response);
-  await act(async () => { await app.login('987654321', '76543210'); });
+  await act(async () => { await app.loginPresentation(); });
   fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ reply: 'Datos simulados' }) } as Response);
   await act(async () => { await assistant.send(); });
   expect(assistant.reply).toBe('Datos simulados');

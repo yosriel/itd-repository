@@ -23,8 +23,7 @@ class AssistantApiTests {
     @MockitoBean AssistantService assistant;
 
     private String login() throws Exception {
-        var result = mvc.perform(post("/api/v1/demo/sessions").contentType("application/json")
-            .content("{\"phone\":\"987654321\",\"dni\":\"76543210\"}"))
+        var result = mvc.perform(post("/api/v1/demo/sessions/presentation"))
             .andExpect(status().isOk()).andReturn();
         return "Bearer " + mapper.readTree(result.getResponse().getContentAsString()).get("token").asText();
     }

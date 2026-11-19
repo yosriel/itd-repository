@@ -184,6 +184,8 @@ export function Field({
   onChange,
   numeric = false,
   email = false,
+  secure = false,
+  passwordType = 'newPassword',
   maxLength,
 }: {
   label: string;
@@ -191,6 +193,8 @@ export function Field({
   onChange: (value: string) => void;
   numeric?: boolean;
   email?: boolean;
+  secure?: boolean;
+  passwordType?: 'password' | 'newPassword';
   maxLength?: number;
 }) {
   return (
@@ -205,8 +209,12 @@ export function Field({
         keyboardType={
           numeric ? 'number-pad' : email ? 'email-address' : 'default'
         }
-        autoCapitalize={email ? 'none' : 'words'}
-        autoCorrect={!numeric && !email}
+        autoCapitalize={email || secure ? 'none' : 'words'}
+        autoCorrect={!numeric && !email && !secure}
+        secureTextEntry={secure}
+        textContentType={
+          secure ? passwordType : email ? 'emailAddress' : 'none'
+        }
         maxLength={maxLength}
         className="rounded-xl border border-line bg-white px-4 py-3 font-sans text-[14px] text-ink"
       />

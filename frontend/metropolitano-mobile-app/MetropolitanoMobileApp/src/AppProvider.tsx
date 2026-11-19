@@ -20,7 +20,15 @@ type AppContextValue = {
   busy: boolean;
   toast: string;
   notify: (text: string) => void;
-  login: (phone: string, dni: string, offline?: boolean) => Promise<void>;
+  login: (phone: string, credential: string, offline?: boolean) => Promise<void>;
+  loginPresentation: () => Promise<void>;
+  register: (input: {
+    fullName: string;
+    phone: string;
+    dni: string;
+    email: string;
+    password: string;
+  }) => Promise<void>;
   logout: () => Promise<void>;
   saveProfile: (profile: Profile) => Promise<void>;
   setNotifications: (enabled: boolean) => Promise<void>;
@@ -73,24 +81,53 @@ export function AppProvider({ children }: React.PropsWithChildren) {
     busy,
     toast,
     notify: setToast,
-    login: (phone, dni, offline = false) =>
+    login: (phone, credential, offline = false) =>
       operation(async () => {
-        if (!/^9\d{8}$/.test(phone) || !/^\d{8}$/.test(dni)) {
-          throw new Error('Ingresa celular de 9 dígitos y DNI de 8 dígitos');
-        }
         if (offline) {
+          if (!/^9\d{8}$/.test(phone) || !/^\d{8}$/.test(credential)) {
+            throw new Error('Ingresa celular de 9 dígitos y DNI de 8 dígitos');
+          }
           setState({
             ...initialState(),
-            profile: { ...initialState().profile, phone, dni },
+            profile: { ...initialState().profile, phone, dni: credential },
           });
           setMode('offline');
           return;
+        }
+        if (!/^9\d{8}$/.test(phone) || !credential) {
+          throw new Error('Ingresa un celular y contraseña válidos');
         }
         const session = await request<{ token: string }>(
           '/sessions',
           undefined,
           'POST',
-          { phone, dni },
+          { phone, password: credential },
+        );
+        token.current = session.token;
+        await refresh();
+        setMode('connected');
+      }),
+    loginPresentation: () =>
+      operation(async () => {
+        const session = await request<{ token: string }>(
+          '/sessions/presentation',
+          undefined,
+          'POST',
+        );
+        token.current = session.token;
+        await refresh();
+        setMode('connected');
+      }),
+    register: input =>
+      operation(async () => {
+        if (input.password.length < 10) {
+          throw new Error('La contraseña debe tener al menos 10 caracteres');
+        }
+        const session = await request<{ token: string }>(
+          '/register',
+          undefined,
+          'POST',
+          input,
         );
         token.current = session.token;
         await refresh();

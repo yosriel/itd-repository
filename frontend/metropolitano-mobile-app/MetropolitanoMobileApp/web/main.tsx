@@ -26,8 +26,13 @@ function WebApp() {
   const app = useApp();
   const [splash, setSplash] = useState(true);
   const [tab, setTab] = useState('Inicio');
-  const [phone, setPhone] = useState('987654321');
-  const [dni, setDni] = useState('76543210');
+  const [registering, setRegistering] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [dni, setDni] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
   const [origin, setOrigin] = useState('Naranjal');
@@ -166,14 +171,40 @@ function WebApp() {
               src={images.wordmark}
               alt="Logotipo del HTML"
             />
-            <h1>Inicia sesión</h1>
-            <p>Ingresa con el celular y DNI registrados para esta presentación.</p>
+            <h1>{registering ? 'Crear cuenta académica' : 'Inicia sesión'}</h1>
+            <p>
+              {registering
+                ? 'Crea un perfil para probar la aplicación. No uses contraseñas ni datos personales que utilices en otros servicios.'
+                : 'Ingresa con el celular y contraseña de tu cuenta académica.'}
+            </p>
             <form
-              onSubmit={e => {
+              onSubmit={async e => {
                 e.preventDefault();
-                run(() => app.login(phone, dni));
+                if (registering) {
+                  if (password !== passwordConfirmation) {
+                    setError('Las contraseñas no coinciden');
+                    return;
+                  }
+                  await run(() =>
+                    app.register({ fullName, phone, dni, email, password }),
+                  );
+                } else {
+                  await run(() => app.login(phone, password));
+                }
               }}
             >
+              {registering && (
+                <label>
+                  Nombre completo
+                  <input
+                    value={fullName}
+                    onChange={e => setFullName(e.target.value)}
+                    maxLength={100}
+                    autoComplete="name"
+                    required
+                  />
+                </label>
+              )}
               <label>
                 Número de celular
                 <input
@@ -181,23 +212,110 @@ function WebApp() {
                   onChange={e => setPhone(e.target.value)}
                   inputMode="numeric"
                   maxLength={9}
+                  autoComplete="tel"
+                  required
                 />
               </label>
+              {registering && (
+                <>
+                  <label>
+                    DNI (dato académico de prueba)
+                    <input
+                      value={dni}
+                      onChange={e => setDni(e.target.value)}
+                      inputMode="numeric"
+                      maxLength={8}
+                      autoComplete="off"
+                      required
+                    />
+                  </label>
+                  <label>
+                    Correo electrónico
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      maxLength={254}
+                      autoComplete="email"
+                      required
+                    />
+                  </label>
+                </>
+              )}
               <label>
-                DNI
+                Contraseña
                 <input
-                  value={dni}
-                  onChange={e => setDni(e.target.value)}
-                  inputMode="numeric"
-                  maxLength={8}
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  minLength={registering ? 10 : 1}
+                  maxLength={72}
+                  autoComplete={registering ? 'new-password' : 'current-password'}
+                  required
                 />
               </label>
-              <button disabled={app.busy}>Ingresar</button>
+              {registering && (
+                <>
+                  <label>
+                    Confirmar contraseña
+                    <input
+                      type="password"
+                      value={passwordConfirmation}
+                      onChange={e => setPasswordConfirmation(e.target.value)}
+                      minLength={10}
+                      maxLength={72}
+                      autoComplete="new-password"
+                      required
+                    />
+                  </label>
+                  <small>
+                    La contraseña se guarda como hash. Esta versión no verifica
+                    la titularidad del celular ni del correo y no es una cuenta
+                    de producción. El perfil de presentación puede borrarse
+                    cuando Render reinicie el servicio.
+                  </small>
+                </>
+              )}
+              <button disabled={app.busy}>
+                {app.busy
+                  ? 'Conectando…'
+                  : registering
+                    ? 'Crear cuenta'
+                    : 'Ingresar'}
+              </button>
             </form>
-            {button(
-              'Explorar sin conexión',
-              () => run(() => app.login(phone, dni, true)),
-              true,
+            <button
+              type="button"
+              className="ghost"
+              disabled={app.busy}
+              onClick={() => {
+                setError('');
+                setRegistering(value => !value);
+              }}
+            >
+              {registering
+                ? 'Ya tengo cuenta · Iniciar sesión'
+                : '¿No tienes cuenta? Crear cuenta'}
+            </button>
+            {!registering && (
+              <>
+                <button
+                  type="button"
+                  className="ghost"
+                  disabled={app.busy}
+                  onClick={() => run(app.loginPresentation)}
+                >
+                  Entrar a la presentación
+                </button>
+                {button(
+                  'Explorar sin conexión',
+                  () =>
+                    run(() =>
+                      app.login(phone || '987654321', dni || '76543210', true),
+                    ),
+                  true,
+                )}
+              </>
             )}
             {error && (
               <p role="alert" className="error">
