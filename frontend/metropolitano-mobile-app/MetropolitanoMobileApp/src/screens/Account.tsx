@@ -7,6 +7,7 @@ import {
   Pressable,
   ScrollView,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import qrcode from 'qrcode-generator';
@@ -390,11 +391,49 @@ function RechargeSheet({
               )}
               {method === 'CARD_DEMO' && (
                 <View className="gap-2 rounded-xl bg-[#F4F7F9] p-4">
-                  <Heading>Tarjeta de muestra · •••• 0000</Heading>
+                  <Heading>Tarjeta de muestra · No cobrable</Heading>
                   <Sub>
-                    No ingreses datos. Esta pantalla no valida ni procesa
-                    tarjetas reales.
+                    Campos visuales bloqueados. No ingreses datos de una tarjeta
+                    real; nada se guarda ni se envía.
                   </Sub>
+                  <View className="gap-1">
+                    <Sub>Titular de muestra</Sub>
+                    <TextInput
+                      accessibilityLabel="Titular de muestra, campo bloqueado"
+                      editable={false}
+                      value="USUARIO DE PRUEBA"
+                      className="rounded-xl border border-line bg-white px-4 py-3 font-sans text-[14px] text-ink"
+                    />
+                  </View>
+                  <View className="gap-1">
+                    <Sub>Número de muestra</Sub>
+                    <TextInput
+                      accessibilityLabel="Número de tarjeta de muestra, campo bloqueado"
+                      editable={false}
+                      value="•••• •••• •••• 4242"
+                      className="rounded-xl border border-line bg-white px-4 py-3 font-sans text-[14px] text-ink"
+                    />
+                  </View>
+                  <View className="flex-row gap-3">
+                    <View className="flex-1 gap-1">
+                      <Sub>Vencimiento de muestra</Sub>
+                      <TextInput
+                        accessibilityLabel="Vencimiento de muestra, campo bloqueado"
+                        editable={false}
+                        value="12/30"
+                        className="rounded-xl border border-line bg-white px-4 py-3 font-sans text-[14px] text-ink"
+                      />
+                    </View>
+                    <View className="flex-1 gap-1">
+                      <Sub>CVV de muestra</Sub>
+                      <TextInput
+                        accessibilityLabel="CVV de muestra, campo bloqueado"
+                        editable={false}
+                        value="•••"
+                        className="rounded-xl border border-line bg-white px-4 py-3 font-sans text-[14px] text-ink"
+                      />
+                    </View>
+                  </View>
                 </View>
               )}
               {retrying && !pending && (
