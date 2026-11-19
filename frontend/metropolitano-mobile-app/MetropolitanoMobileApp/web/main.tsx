@@ -42,6 +42,10 @@ function WebApp() {
   const [modal, setModal] = useState('');
   const [amount, setAmount] = useState(5);
   const [method, setMethod] = useState<'YAPE_DEMO' | 'CARD_DEMO'>('YAPE_DEMO');
+  const [paymentStep, setPaymentStep] = useState<'select' | 'processing' | 'receipt'>('select');
+  const [paymentReference, setPaymentReference] = useState('');
+  const [paymentDate, setPaymentDate] = useState('');
+  const [paymentAttempted, setPaymentAttempted] = useState(false);
   const [profile, setProfile] = useState(false);
   const [draft, setDraft] = useState(app.state.profile);
   const [clock, setClock] = useState(Date.now());
@@ -70,6 +74,12 @@ function WebApp() {
     code.make();
     return code.createSvgTag({ cellSize: 4, margin: 16, scalable: true });
   }, [qrPeriod]);
+  const paymentQr = useMemo(() => {
+    const code = qrcode(0, 'M');
+    code.addData(`SIMULACION-NO-COBRABLE|METROPOLITANO|${amount}`);
+    code.make();
+    return code.createSvgTag({ cellSize: 4, margin: 12, scalable: true });
+  }, [amount]);
   async function run(action: () => Promise<unknown>) {
     setError('');
     try {
@@ -508,6 +518,11 @@ function WebApp() {
               )}
               {button('Recargar saldo', () => {
                 setKey(crypto.randomUUID());
+                setPaymentStep('select');
+                setPaymentReference('');
+                setPaymentDate('');
+                setPaymentAttempted(false);
+                setError('');
                 setModal('recharge');
               })}
               <h2>Historial reciente</h2>
@@ -575,6 +590,7 @@ function WebApp() {
             <button
               aria-label="Cerrar"
               className="close"
+              disabled={paymentStep === 'processing'}
               onClick={() => setModal('')}
             >
               ×
@@ -636,36 +652,148 @@ function WebApp() {
             )}
             {modal === 'recharge' && (
               <>
-                <h1>Recargar saldo</h1>
-                <p>Recarga ficticia. No se realizará ningún cobro.</p>
-                <label>
-                  Monto
-                  <select
-                    value={amount}
-                    onChange={e => setAmount(Number(e.target.value))}
-                  >
-                    {[5, 10, 20, 50].map(n => (
-                      <option value={n} key={n}>
-                        S/ {n}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Método de pago
-                  <select
-                    value={method}
-                    onChange={e => setMethod(e.target.value as typeof method)}
-                  >
-                    <option value="YAPE_DEMO">Yape · sin cobro</option>
-                    <option value="CARD_DEMO">Tarjeta · sin cobro</option>
-                  </select>
-                </label>
-                {button('Recargar ahora · Demo', () =>
-                  run(async () => {
-                    await app.recharge(amount, method, key);
-                    setModal('');
-                  }),
+                {paymentStep === 'receipt' ? (
+                  <>
+                    <h1>Comprobante de simulación</h1>
+                    <section className="payment-receipt" role="status">
+                      <h2>Recarga de prueba registrada</h2>
+                      <strong>{money(amount)}</strong>
+                      <p>
+                        No hubo pago, transferencia ni cargo real. Este
+                        comprobante corresponde solo a una simulación académica.
+                      </p>
+                    </section>
+                    <div className="payment-details">
+                      <small>
+                        Método de muestra:{' '}
+                        {method === 'YAPE_DEMO'
+                          ? 'Yape (simulación)'
+                          : 'Tarjeta (simulación)'}
+                      </small>
+                      <small>Referencia de simulación: {paymentReference}</small>
+                      <small>Fecha y hora: {paymentDate}</small>
+                      <small>Saldo de prueba actualizado en la aplicación.</small>
+                    </div>
+                    {button('Cerrar comprobante', () => setModal(''), true)}
+                  </>
+                ) : paymentStep === 'processing' ? (
+                  <div className="payment-processing" role="status" aria-live="polite">
+                    <h2>Preparando simulación…</h2>
+                    <p>No se está realizando un cobro real.</p>
+                  </div>
+                ) : (
+                  <>
+                    <section className="payment-notice" role="note">
+                      <strong>Entorno académico · Sin pagos reales</strong>
+                      <p>
+                        No se cobra dinero ni se conecta con Yape o bancos. No
+                        ingreses números de tarjeta, vencimiento, CVV ni claves.
+                      </p>
+                    </section>
+                    <label>
+                      Monto de prueba
+                      <select
+                        value={amount}
+                        disabled={paymentAttempted}
+                        onChange={e => setAmount(Number(e.target.value))}
+                      >
+                        {[5, 10, 20, 50].map(n => (
+                          <option value={n} key={n}>
+                            S/ {n}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Vista de método (no cobrable)
+                      <select
+                        value={method}
+                        disabled={paymentAttempted}
+                        onChange={e =>
+                          setMethod(e.target.value as typeof method)
+                        }
+                      >
+                        <option value="YAPE_DEMO">Yape · vista de ejemplo</option>
+                        <option value="CARD_DEMO">Tarjeta · vista de ejemplo</option>
+                      </select>
+                    </label>
+                    {method === 'YAPE_DEMO' ? (
+                      <section className="payment-qr">
+                        <strong>QR de muestra · No es un QR de pago</strong>
+                        <div
+                          className="qr"
+                          aria-label="Código QR de simulación; no permite pagar"
+                          dangerouslySetInnerHTML={{ __html: paymentQr }}
+                        />
+                        <small>
+                          Destino de muestra: Metropolitano · proyecto académico
+                        </small>
+                      </section>
+                    ) : (
+                      <section className="sample-card">
+                        <strong>Tarjeta de muestra · No cobrable</strong>
+                        <p>
+                          Campos de ejemplo bloqueados. No ingreses datos de
+                          tarjetas reales; nada se guarda ni se envía.
+                        </p>
+                        <label>
+                          Titular de muestra
+                          <input aria-label="Titular de muestra, campo bloqueado" value="USUARIO DE PRUEBA" disabled readOnly />
+                        </label>
+                        <label>
+                          Número de muestra
+                          <input aria-label="Número de tarjeta de muestra, campo bloqueado" value="•••• •••• •••• 4242" disabled readOnly />
+                        </label>
+                        <div className="row">
+                          <label>
+                            Vencimiento de muestra
+                            <input aria-label="Vencimiento de muestra, campo bloqueado" value="12/30" disabled readOnly />
+                          </label>
+                          <label>
+                            CVV de muestra
+                            <input aria-label="CVV de muestra, campo bloqueado" value="•••" disabled readOnly />
+                          </label>
+                        </div>
+                      </section>
+                    )}
+                    <button
+                      type="button"
+                      disabled={app.busy}
+                      onClick={async () => {
+                        setError('');
+                        setPaymentAttempted(true);
+                        setPaymentStep('processing');
+                        await new Promise(resolve =>
+                          window.setTimeout(resolve, 1600),
+                        );
+                        try {
+                          await app.recharge(amount, method, key);
+                          setPaymentReference(
+                            `SIM-${key.slice(-8).toUpperCase()}`,
+                          );
+                          setPaymentDate(
+                            new Date().toLocaleString('es-PE', {
+                              timeZone: 'America/Lima',
+                              dateStyle: 'short',
+                              timeStyle: 'short',
+                            }),
+                          );
+                          setPaymentStep('receipt');
+                        } catch (e) {
+                          setError(
+                            e instanceof Error
+                              ? `${e.message}. Puedes reintentar con la misma selección.`
+                              : 'No se pudo completar la simulación.',
+                          );
+                          setPaymentStep('select');
+                        }
+                      }}
+                    >
+                      {paymentAttempted
+                        ? 'Reintentar simulación'
+                        : `Simular recarga · ${money(amount)}`}
+                    </button>
+                  </>
                 )}
               </>
             )}

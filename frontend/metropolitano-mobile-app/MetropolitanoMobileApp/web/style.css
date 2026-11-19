@@ -388,6 +388,73 @@ nav button[aria-current] {
   width: 100%;
   height: auto;
 }
+.payment-notice,
+.payment-receipt {
+  border: 1px solid #e8c882;
+  border-radius: 14px;
+  background: #fff8e8;
+  padding: 14px;
+  color: #14202b;
+}
+.payment-notice strong,
+.payment-qr strong,
+.sample-card > strong {
+  color: #0b3552;
+}
+.payment-notice p,
+.payment-receipt p,
+.sample-card p {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+.payment-qr,
+.sample-card,
+.payment-details,
+.payment-processing {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #e4e9ee;
+  border-radius: 14px;
+  padding: 14px;
+}
+.payment-qr {
+  justify-items: center;
+  text-align: center;
+}
+.payment-qr .qr {
+  width: 190px;
+}
+.payment-details small {
+  overflow-wrap: anywhere;
+}
+.payment-receipt {
+  text-align: center;
+}
+.payment-receipt > strong {
+  display: block;
+  margin: 8px 0;
+  color: #0b3552;
+  font-size: 28px;
+}
+.payment-processing {
+  justify-items: center;
+  background: #f4f7f9;
+  text-align: center;
+}
+.payment-processing p {
+  margin: 0;
+}
+.sample-card {
+  background: #f4f7f9;
+}
+.sample-card .row {
+  align-items: flex-start;
+}
+.sample-card input:disabled {
+  opacity: 1;
+  color: #455566;
+  background: #fff;
+}
 .toast {
   position: absolute;
   bottom: 72px;
