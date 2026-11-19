@@ -21,6 +21,9 @@ input,
 select {
   font: inherit;
 }
+textarea {
+  font: inherit;
+}
 button {
   cursor: pointer;
   border: 0;
@@ -36,11 +39,89 @@ button:disabled {
   opacity: 0.5;
   cursor: default;
 }
+.assistant button[aria-disabled='true'] {
+  opacity: 0.65;
+  cursor: wait;
+}
 button:focus-visible,
 input:focus-visible,
 select:focus-visible {
   outline: 3px solid #00897e;
   outline-offset: 3px;
+}
+textarea:focus-visible {
+  outline: 3px solid #00897e;
+  outline-offset: 3px;
+}
+textarea {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #5b6b7a;
+  border-radius: 12px;
+  background: white;
+  color: #14202b;
+  resize: vertical;
+}
+.assistant form { gap: 10px; }
+.assistant label { color: #0b3552; font-size: 14px; }
+.assistant-options { display: grid; gap: 7px; margin: 12px 0; }
+.assistant-options strong { color: #0b3552; font-size: 13px; }
+.assistant-options button {
+  background: #f0f5f8;
+  color: #0b3552;
+  border: 1px solid #c8d6df;
+  min-height: 44px;
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 13px;
+}
+.assistant-section-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
+.ai-route-options { display: grid; gap: 8px; padding: 12px; border-radius: 12px; background: #f0f5f8; }
+.ai-route-options > strong { color: #0b3552; }
+.ai-route-presets { display: flex; gap: 8px; }
+.ai-route-presets button { min-height: 44px; padding: 8px; }
+.ai-route-presets button[aria-pressed='true'] { background: #0b6d67; }
+.ai-route-incident { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+.ai-route-incident input { width: 20px; min-height: 20px; }
+.assistant-result p { margin: 12px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.assistant-error { color: #9f211b; }
+.assistant-float {
+  position: absolute;
+  right: 16px;
+  bottom: calc(78px + env(safe-area-inset-bottom));
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  max-width: calc(100% - 32px);
+}
+.assistant {
+  width: min(360px, calc(100vw - 32px));
+  max-height: min(65dvh, 500px);
+  overflow: auto;
+  box-shadow: 0 8px 24px #0b355233;
+}
+.assistant-header { display: flex; align-items: center; justify-content: space-between; }
+.assistant-header h2 { margin: 0; font-size: 16px; }
+.assistant .assistant-close {
+  width: 44px;
+  padding: 0;
+  background: transparent;
+  color: #0b3552;
+  font-size: 26px;
+}
+.assistant .assistant-notice { color: #455566; font-size: 12px; }
+.assistant-launcher {
+  width: 58px;
+  height: 58px;
+  min-height: 58px;
+  padding: 0;
+  border-radius: 50%;
+  background: #0b3552;
+  color: #fff;
+  box-shadow: 0 4px 14px #0b355255;
+  font-size: 18px;
 }
 input,
 select {
@@ -306,6 +387,73 @@ nav button[aria-current] {
 .qr svg {
   width: 100%;
   height: auto;
+}
+.payment-notice,
+.payment-receipt {
+  border: 1px solid #e8c882;
+  border-radius: 14px;
+  background: #fff8e8;
+  padding: 14px;
+  color: #14202b;
+}
+.payment-notice strong,
+.payment-qr strong,
+.sample-card > strong {
+  color: #0b3552;
+}
+.payment-notice p,
+.payment-receipt p,
+.sample-card p {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+.payment-qr,
+.sample-card,
+.payment-details,
+.payment-processing {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #e4e9ee;
+  border-radius: 14px;
+  padding: 14px;
+}
+.payment-qr {
+  justify-items: center;
+  text-align: center;
+}
+.payment-qr .qr {
+  width: 190px;
+}
+.payment-details small {
+  overflow-wrap: anywhere;
+}
+.payment-receipt {
+  text-align: center;
+}
+.payment-receipt > strong {
+  display: block;
+  margin: 8px 0;
+  color: #0b3552;
+  font-size: 28px;
+}
+.payment-processing {
+  justify-items: center;
+  background: #f4f7f9;
+  text-align: center;
+}
+.payment-processing p {
+  margin: 0;
+}
+.sample-card {
+  background: #f4f7f9;
+}
+.sample-card .row {
+  align-items: flex-start;
+}
+.sample-card input:disabled {
+  opacity: 1;
+  color: #455566;
+  background: #fff;
 }
 .toast {
   position: absolute;

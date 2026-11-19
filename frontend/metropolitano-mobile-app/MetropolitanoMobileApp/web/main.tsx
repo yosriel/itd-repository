@@ -11,6 +11,10 @@ import {
 } from '../src/demoTransit';
 import { logoXml } from '../assets/images/logo';
 import './style.css';
+import { Assistant } from './Assistant';
+import { assistantSections } from '../src/assistantOptions';
+import type { TabParams } from '../src/navigationTypes';
+import { aiSupportedStations, requestAiRoute, Scenario, stationLabel, AiRouteResponse } from '../src/aiRoute';
 const logo = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(logoXml)}`;
 const images = {
   splash: new URL('../assets/images/splash.jpg', import.meta.url).href,
@@ -22,18 +26,31 @@ function WebApp() {
   const app = useApp();
   const [splash, setSplash] = useState(true);
   const [tab, setTab] = useState('Inicio');
-  const [phone, setPhone] = useState('987654321');
-  const [dni, setDni] = useState('76543210');
+  const [registering, setRegistering] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [dni, setDni] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
   const [origin, setOrigin] = useState('Naranjal');
   const [destination, setDestination] = useState('');
   const [plan, setPlan] = useState<DemoPlan | null>(null);
+  const [aiPrediction, setAiPrediction] = useState<AiRouteResponse | null>(null);
+  const [aiScenario, setAiScenario] = useState<Scenario>('peak');
+  const [aiIncident, setAiIncident] = useState(true);
+  const [routeLoading, setRouteLoading] = useState(false);
   const [detail, setDetail] = useState(false);
   const [station, setStation] = useState('');
   const [modal, setModal] = useState('');
   const [amount, setAmount] = useState(5);
   const [method, setMethod] = useState<'YAPE_DEMO' | 'CARD_DEMO'>('YAPE_DEMO');
+  const [paymentStep, setPaymentStep] = useState<'select' | 'processing' | 'receipt'>('select');
+  const [paymentReference, setPaymentReference] = useState('');
+  const [paymentDate, setPaymentDate] = useState('');
+  const [paymentAttempted, setPaymentAttempted] = useState(false);
   const [profile, setProfile] = useState(false);
   const [draft, setDraft] = useState(app.state.profile);
   const [clock, setClock] = useState(Date.now());
@@ -62,6 +79,12 @@ function WebApp() {
     code.make();
     return code.createSvgTag({ cellSize: 4, margin: 16, scalable: true });
   }, [qrPeriod]);
+  const paymentQr = useMemo(() => {
+    const code = qrcode(0, 'M');
+    code.addData(`SIMULACION-NO-COBRABLE|METROPOLITANO|${amount}`);
+    code.make();
+    return code.createSvgTag({ cellSize: 4, margin: 12, scalable: true });
+  }, [amount]);
   async function run(action: () => Promise<unknown>) {
     setError('');
     try {
@@ -69,6 +92,44 @@ function WebApp() {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error');
     }
+  }
+  async function searchRoute() {
+    setPlan(null);
+    setAiPrediction(null);
+    setError('');
+    if (app.mode !== 'connected') {
+      setPlan(planDemo(origin, destination));
+      return;
+    }
+    setRouteLoading(true);
+    try {
+      const prediction = await requestAiRoute(origin, destination, aiScenario, aiIncident);
+      setAiPrediction(prediction);
+      setPlan({
+        origin,
+        destinoNombre: destination,
+        tiempo: `${prediction.costo_grafo_minutos} min · A*`,
+        linea: 'Ruta calculada por A*',
+        paradas: prediction.ruta.map(stationLabel),
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo consultar la API de IA.');
+    } finally {
+      setRouteLoading(false);
+    }
+  }
+  function navigateTo(name: string) {
+    setTab(name);
+    setProfile(false);
+    setDetail(false);
+    setError('');
+    if (name === 'Alertas') {
+      run(app.readAlerts);
+    }
+  }
+  function navigateFromAssistant(target: keyof TabParams) {
+    const section = assistantSections.find(item => item.tab === target);
+    if (section) { navigateTo(section.label); }
   }
   const button = (title: string, action: () => void, ghost = false) => (
     <button
@@ -92,15 +153,15 @@ function WebApp() {
             />
             <div className="fade" />
             <div className="splash-content">
-              <img className="mark" src={logo} alt="Logotipo del prototipo" />
+              <img className="mark" src={logo} alt="Logotipo de Metropolitano Lima App" />
               <h1>
                 Metropolitano
                 <br />
                 Lima App
               </h1>
-              <p>Tu ruta, en una experiencia de demostración.</p>
+              <p>Tu ruta, en un solo lugar.</p>
               {button('Pulsa para continuar', () => setSplash(false))}
-              <small>Prototipo académico · Sin conexión oficial con ATU</small>
+              <small>Experiencia académica · Datos de referencia</small>
             </div>
           </section>
         ) : (
@@ -110,14 +171,40 @@ function WebApp() {
               src={images.wordmark}
               alt="Logotipo del HTML"
             />
-            <h1>Inicia sesión</h1>
-            <p>Ingresa con datos ficticios para explorar el prototipo.</p>
+            <h1>{registering ? 'Crear cuenta académica' : 'Inicia sesión'}</h1>
+            <p>
+              {registering
+                ? 'Crea un perfil para probar la aplicación. No uses contraseñas ni datos personales que utilices en otros servicios.'
+                : 'Ingresa con el celular y contraseña de tu cuenta académica.'}
+            </p>
             <form
-              onSubmit={e => {
+              onSubmit={async e => {
                 e.preventDefault();
-                run(() => app.login(phone, dni));
+                if (registering) {
+                  if (password !== passwordConfirmation) {
+                    setError('Las contraseñas no coinciden');
+                    return;
+                  }
+                  await run(() =>
+                    app.register({ fullName, phone, dni, email, password }),
+                  );
+                } else {
+                  await run(() => app.login(phone, password));
+                }
               }}
             >
+              {registering && (
+                <label>
+                  Nombre completo
+                  <input
+                    value={fullName}
+                    onChange={e => setFullName(e.target.value)}
+                    maxLength={100}
+                    autoComplete="name"
+                    required
+                  />
+                </label>
+              )}
               <label>
                 Número de celular
                 <input
@@ -125,30 +212,117 @@ function WebApp() {
                   onChange={e => setPhone(e.target.value)}
                   inputMode="numeric"
                   maxLength={9}
+                  autoComplete="tel"
+                  required
                 />
               </label>
+              {registering && (
+                <>
+                  <label>
+                    DNI (dato académico de prueba)
+                    <input
+                      value={dni}
+                      onChange={e => setDni(e.target.value)}
+                      inputMode="numeric"
+                      maxLength={8}
+                      autoComplete="off"
+                      required
+                    />
+                  </label>
+                  <label>
+                    Correo electrónico
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      maxLength={254}
+                      autoComplete="email"
+                      required
+                    />
+                  </label>
+                </>
+              )}
               <label>
-                DNI
+                Contraseña
                 <input
-                  value={dni}
-                  onChange={e => setDni(e.target.value)}
-                  inputMode="numeric"
-                  maxLength={8}
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  minLength={registering ? 10 : 1}
+                  maxLength={72}
+                  autoComplete={registering ? 'new-password' : 'current-password'}
+                  required
                 />
               </label>
-              <button disabled={app.busy}>Ingresar</button>
+              {registering && (
+                <>
+                  <label>
+                    Confirmar contraseña
+                    <input
+                      type="password"
+                      value={passwordConfirmation}
+                      onChange={e => setPasswordConfirmation(e.target.value)}
+                      minLength={10}
+                      maxLength={72}
+                      autoComplete="new-password"
+                      required
+                    />
+                  </label>
+                  <small>
+                    La contraseña se guarda como hash. Esta versión no verifica
+                    la titularidad del celular ni del correo y no es una cuenta
+                    de producción. El perfil de presentación puede borrarse
+                    cuando Render reinicie el servicio.
+                  </small>
+                </>
+              )}
+              <button disabled={app.busy}>
+                {app.busy
+                  ? 'Conectando…'
+                  : registering
+                    ? 'Crear cuenta'
+                    : 'Ingresar'}
+              </button>
             </form>
-            {button(
-              'Explorar sin conexión',
-              () => run(() => app.login(phone, dni, true)),
-              true,
+            <button
+              type="button"
+              className="ghost"
+              disabled={app.busy}
+              onClick={() => {
+                setError('');
+                setRegistering(value => !value);
+              }}
+            >
+              {registering
+                ? 'Ya tengo cuenta · Iniciar sesión'
+                : '¿No tienes cuenta? Crear cuenta'}
+            </button>
+            {!registering && (
+              <>
+                <button
+                  type="button"
+                  className="ghost"
+                  disabled={app.busy}
+                  onClick={() => run(app.loginPresentation)}
+                >
+                  Entrar a la presentación
+                </button>
+                {button(
+                  'Explorar sin conexión',
+                  () =>
+                    run(() =>
+                      app.login(phone || '987654321', dni || '76543210', true),
+                    ),
+                  true,
+                )}
+              </>
             )}
             {error && (
               <p role="alert" className="error">
                 {error}
               </p>
             )}
-            <small>Prototipo académico · Datos simulados</small>
+            <small>Acceso de presentación · Datos de prueba</small>
           </section>
         )}
       </main>
@@ -158,7 +332,6 @@ function WebApp() {
     <main className="shell">
       <header>
         <small>
-          Prototipo académico ·{' '}
           {app.mode === 'connected' ? 'Conectado' : 'Sin conexión'}
         </small>
         {tab === 'Inicio' ? (
@@ -249,7 +422,7 @@ function WebApp() {
                 </h2>
                 <h1>{plan.tiempo}</h1>
                 <p>{plan.linea}</p>
-                <small>{plan.transbordos} transbordos · Simulado</small>
+                <small>{plan.transbordos === undefined ? 'Transbordos no incluidos en el cálculo' : `${plan.transbordos} transbordos estimados`}</small>
               </div>
               {plan.paradas.map((stop, i) => (
                 <div className="card" key={stop}>
@@ -260,12 +433,10 @@ function WebApp() {
               {button(
                 travelIndex >= 0
                   ? 'Cancelar simulación'
-                  : 'Iniciar viaje simulado',
+                  : 'Iniciar recorrido guiado',
                 () => setTravelIndex(travelIndex >= 0 ? -1 : 0),
               )}
-              <small>
-                Recorrido ilustrativo; no sigue un bus real ni cobra pasaje.
-              </small>
+              <small>Explora el orden de las estaciones del recorrido.</small>
             </>
           ) : (
             <>
@@ -276,9 +447,10 @@ function WebApp() {
                   onChange={e => {
                     setOrigin(e.target.value);
                     setPlan(null);
+                    setAiPrediction(null);
                   }}
                 >
-                  {demoStations.map(s => (
+                  {(app.mode === 'connected' ? aiSupportedStations : demoStations).map(s => (
                     <option key={s}>{s}</option>
                   ))}
                 </select>
@@ -290,10 +462,11 @@ function WebApp() {
                   onChange={e => {
                     setDestination(e.target.value);
                     setPlan(null);
+                    setAiPrediction(null);
                   }}
                 >
                   <option value="">Selecciona una estación</option>
-                  {demoStations.map(s => (
+                  {(app.mode === 'connected' ? aiSupportedStations : demoStations).map(s => (
                     <option key={s}>{s}</option>
                   ))}
                 </select>
@@ -305,15 +478,37 @@ function WebApp() {
                     setOrigin(destination);
                     setDestination(origin);
                     setPlan(null);
+                    setAiPrediction(null);
                   }
                 },
                 true,
               )}
+              {app.mode === 'connected' && (
+                <section className="ai-route-options" aria-label="Escenario de predicción">
+                  <strong>Escenario de predicción · Datos sintéticos</strong>
+                  <small>La distancia, el servicio y la frecuencia restante son supuestos de ejemplo.</small>
+                  <div className="ai-route-presets">
+                    <button type="button" aria-pressed={aiScenario === 'peak'}
+                      onClick={() => { setAiScenario('peak'); setPlan(null); setAiPrediction(null); }}>
+                      Hora punta
+                    </button>
+                    <button type="button" aria-pressed={aiScenario === 'offpeak'}
+                      onClick={() => { setAiScenario('offpeak'); setPlan(null); setAiPrediction(null); }}>
+                      Hora valle
+                    </button>
+                  </div>
+                  <label className="ai-route-incident">
+                    <input type="checkbox" checked={aiIncident}
+                      onChange={event => { setAiIncident(event.target.checked); setPlan(null); setAiPrediction(null); }} />
+                    Incluir incidencia en Caquetá
+                  </label>
+                </section>
+              )}
               <button
-                disabled={!destination || origin === destination}
-                onClick={() => setPlan(planDemo(origin, destination))}
+                disabled={!destination || origin === destination || routeLoading}
+                onClick={searchRoute}
               >
-                Buscar ruta
+                {routeLoading ? 'Calculando…' : 'Buscar ruta'}
               </button>
               {origin === destination && (
                 <p role="alert">Elige dos estaciones diferentes.</p>
@@ -325,14 +520,21 @@ function WebApp() {
                   </h2>
                   <p>{plan.linea}</p>
                   <strong>
-                    {plan.tiempo} · {plan.transbordos} transbordos
+                    {plan.tiempo}{plan.transbordos === undefined ? '' : ` · ${plan.transbordos} transbordos`}
                   </strong>
                   {button('Ver ruta trazada', () => setDetail(true))}
                 </article>
               )}
+              {aiPrediction && (
+                <article className="card" aria-live="polite">
+                  <h2>Predicción de IA</h2>
+                  <p>ETA Ridge: {aiPrediction.eta_modelo_minutos} min. Es distinto del costo A*.</p>
+                  <p>Saturación: {aiPrediction.saturacion_critica ? 'crítica' : 'normal'} · probabilidad XGBoost: {(aiPrediction.probabilidad_saturacion * 100).toFixed(1)}%</p>
+                  <small>Estimaciones con datos sintéticos, no información en tiempo real.</small>
+                </article>
+              )}
               <small>
-                Estimaciones de prueba; no representan recorridos operativos
-                verificados.
+                Estimaciones de referencia; no hay horarios en vivo disponibles.
               </small>
             </>
           ))}
@@ -341,7 +543,7 @@ function WebApp() {
             <article className="card row">
               <div>
                 <h2>Notificaciones push</h2>
-                <small>Preferencia simulada</small>
+                <small>Preferencia de avisos</small>
               </div>
               <input
                 aria-label="Notificaciones"
@@ -434,6 +636,11 @@ function WebApp() {
               )}
               {button('Recargar saldo', () => {
                 setKey(crypto.randomUUID());
+                setPaymentStep('select');
+                setPaymentReference('');
+                setPaymentDate('');
+                setPaymentAttempted(false);
+                setError('');
                 setModal('recharge');
               })}
               <h2>Historial reciente</h2>
@@ -472,20 +679,13 @@ function WebApp() {
           <button
             key={name}
             aria-current={tab === name ? 'page' : undefined}
-            onClick={() => {
-              setTab(name);
-              setProfile(false);
-              setDetail(false);
-              setError('');
-              if (name === 'Alertas') {
-                run(app.readAlerts);
-              }
-            }}
+            onClick={() => navigateTo(name)}
           >
             {name}
           </button>
         ))}
       </nav>
+      {!modal && <Assistant onNavigate={navigateFromAssistant} />}
       {app.toast && (
         <div className="toast" role="status">
           {app.toast}
@@ -508,6 +708,7 @@ function WebApp() {
             <button
               aria-label="Cerrar"
               className="close"
+              disabled={paymentStep === 'processing'}
               onClick={() => setModal('')}
             >
               ×
@@ -529,7 +730,7 @@ function WebApp() {
             {modal === 'station' && (
               <>
                 <h1>{station}</h1>
-                <p>Servicios del HTML · Andenes y llegadas simulados</p>
+                <p>Servicios de referencia · Llegadas estimadas</p>
                 {demoArrivals(station).map((a, i) => (
                   <article className="card" key={a.line}>
                     <h2>{a.line}</h2>
@@ -569,36 +770,148 @@ function WebApp() {
             )}
             {modal === 'recharge' && (
               <>
-                <h1>Recargar saldo</h1>
-                <p>Recarga ficticia. No se realizará ningún cobro.</p>
-                <label>
-                  Monto
-                  <select
-                    value={amount}
-                    onChange={e => setAmount(Number(e.target.value))}
-                  >
-                    {[5, 10, 20, 50].map(n => (
-                      <option value={n} key={n}>
-                        S/ {n}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Método de pago
-                  <select
-                    value={method}
-                    onChange={e => setMethod(e.target.value as typeof method)}
-                  >
-                    <option value="YAPE_DEMO">Yape · Simulado</option>
-                    <option value="CARD_DEMO">Tarjeta · Simulada</option>
-                  </select>
-                </label>
-                {button('Recargar ahora · Demo', () =>
-                  run(async () => {
-                    await app.recharge(amount, method, key);
-                    setModal('');
-                  }),
+                {paymentStep === 'receipt' ? (
+                  <>
+                    <h1>Comprobante de simulación</h1>
+                    <section className="payment-receipt" role="status">
+                      <h2>Recarga de prueba registrada</h2>
+                      <strong>{money(amount)}</strong>
+                      <p>
+                        No hubo pago, transferencia ni cargo real. Este
+                        comprobante corresponde solo a una simulación académica.
+                      </p>
+                    </section>
+                    <div className="payment-details">
+                      <small>
+                        Método de muestra:{' '}
+                        {method === 'YAPE_DEMO'
+                          ? 'Yape (simulación)'
+                          : 'Tarjeta (simulación)'}
+                      </small>
+                      <small>Referencia de simulación: {paymentReference}</small>
+                      <small>Fecha y hora: {paymentDate}</small>
+                      <small>Saldo de prueba actualizado en la aplicación.</small>
+                    </div>
+                    {button('Cerrar comprobante', () => setModal(''), true)}
+                  </>
+                ) : paymentStep === 'processing' ? (
+                  <div className="payment-processing" role="status" aria-live="polite">
+                    <h2>Preparando simulación…</h2>
+                    <p>No se está realizando un cobro real.</p>
+                  </div>
+                ) : (
+                  <>
+                    <section className="payment-notice" role="note">
+                      <strong>Entorno académico · Sin pagos reales</strong>
+                      <p>
+                        No se cobra dinero ni se conecta con Yape o bancos. No
+                        ingreses números de tarjeta, vencimiento, CVV ni claves.
+                      </p>
+                    </section>
+                    <label>
+                      Monto de prueba
+                      <select
+                        value={amount}
+                        disabled={paymentAttempted}
+                        onChange={e => setAmount(Number(e.target.value))}
+                      >
+                        {[5, 10, 20, 50].map(n => (
+                          <option value={n} key={n}>
+                            S/ {n}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Vista de método (no cobrable)
+                      <select
+                        value={method}
+                        disabled={paymentAttempted}
+                        onChange={e =>
+                          setMethod(e.target.value as typeof method)
+                        }
+                      >
+                        <option value="YAPE_DEMO">Yape · vista de ejemplo</option>
+                        <option value="CARD_DEMO">Tarjeta · vista de ejemplo</option>
+                      </select>
+                    </label>
+                    {method === 'YAPE_DEMO' ? (
+                      <section className="payment-qr">
+                        <strong>QR de muestra · No es un QR de pago</strong>
+                        <div
+                          className="qr"
+                          aria-label="Código QR de simulación; no permite pagar"
+                          dangerouslySetInnerHTML={{ __html: paymentQr }}
+                        />
+                        <small>
+                          Destino de muestra: Metropolitano · proyecto académico
+                        </small>
+                      </section>
+                    ) : (
+                      <section className="sample-card">
+                        <strong>Tarjeta de muestra · No cobrable</strong>
+                        <p>
+                          Campos de ejemplo bloqueados. No ingreses datos de
+                          tarjetas reales; nada se guarda ni se envía.
+                        </p>
+                        <label>
+                          Titular de muestra
+                          <input aria-label="Titular de muestra, campo bloqueado" value="USUARIO DE PRUEBA" disabled readOnly />
+                        </label>
+                        <label>
+                          Número de muestra
+                          <input aria-label="Número de tarjeta de muestra, campo bloqueado" value="•••• •••• •••• 4242" disabled readOnly />
+                        </label>
+                        <div className="row">
+                          <label>
+                            Vencimiento de muestra
+                            <input aria-label="Vencimiento de muestra, campo bloqueado" value="12/30" disabled readOnly />
+                          </label>
+                          <label>
+                            CVV de muestra
+                            <input aria-label="CVV de muestra, campo bloqueado" value="•••" disabled readOnly />
+                          </label>
+                        </div>
+                      </section>
+                    )}
+                    <button
+                      type="button"
+                      disabled={app.busy}
+                      onClick={async () => {
+                        setError('');
+                        setPaymentAttempted(true);
+                        setPaymentStep('processing');
+                        await new Promise(resolve =>
+                          window.setTimeout(resolve, 1600),
+                        );
+                        try {
+                          await app.recharge(amount, method, key);
+                          setPaymentReference(
+                            `SIM-${key.slice(-8).toUpperCase()}`,
+                          );
+                          setPaymentDate(
+                            new Date().toLocaleString('es-PE', {
+                              timeZone: 'America/Lima',
+                              dateStyle: 'short',
+                              timeStyle: 'short',
+                            }),
+                          );
+                          setPaymentStep('receipt');
+                        } catch (e) {
+                          setError(
+                            e instanceof Error
+                              ? `${e.message}. Puedes reintentar con la misma selección.`
+                              : 'No se pudo completar la simulación.',
+                          );
+                          setPaymentStep('select');
+                        }
+                      }}
+                    >
+                      {paymentAttempted
+                        ? 'Reintentar simulación'
+                        : `Simular recarga · ${money(amount)}`}
+                    </button>
+                  </>
                 )}
               </>
             )}

@@ -20,7 +20,8 @@ Fecha: 12 de octubre de 2026. Base: HTML final con SHA-256 `734BCBFA25EC1F318DB6
 | Saldo e historial | `Account.tsx`, JPA | Saldo demo, últimos 50 registros de recarga y ejemplos iniciales |
 | Recarga idempotente | `DemoService`, `RechargeRepository` | Dinero ficticio, BigDecimal, bloqueo pesimista y clave única |
 | Sesiones | `DemoSessions` | Bearer aleatorio en memoria, vencimiento 1 h, revocación |
-| Migraciones | `db/migration` | H2 local; perfil MySQL conservado |
+| Registro académico | `DemoController`, `DemoService`, `Auth.tsx`, `web/main.tsx` | Registro y login por celular/contraseña con BCrypt; acceso de presentación separado |
+| Migraciones | `db/migration` | H2 local; perfil MySQL conservado; hash de contraseña nullable para datos preexistentes |
 | Errores de API | `DemoErrors` | ProblemDetail y validación por campo |
 
 ## Diferencias deliberadas respecto del HTML
@@ -39,7 +40,7 @@ Fecha: 12 de octubre de 2026. Base: HTML final con SHA-256 `734BCBFA25EC1F318DB6
 
 1. Revisar las ocho vistas renderizadas contra el HTML y ensayar en un Android real/emulador y en iOS. No hubo dispositivo conectado ni AVD disponible durante esta entrega.
 2. Verificar imágenes, posibles referencias al Corredor Rojo, autores y licencias individuales.
-3. Autenticación propia de producción y estrategia de DNI/celular. El login demo identifica por celular original, acepta DNI ficticio y no verifica titularidad.
+3. La autenticación académica usa BCrypt, pero no verifica la titularidad del celular o correo, no tiene recuperación de contraseña ni limitación de intentos; no usar contraseñas ni datos personales reales ni presentarla como autenticación de producción.
 4. Sesión persistente con almacenamiento seguro y recuperación ante vencimiento; actualmente el token vive en memoria y el usuario vuelve a ingresar.
 5. Lectura individual de alertas, catálogo versionado/verificado, mapa/geolocalización y proveedor push si se requieren. No están disponibles por defecto.
 6. Libro mayor completo, saldo de apertura explícito, conciliación y paginación de historial. Los tres registros precargados son ilustraciones, sin efecto sobre el balance persistido.
@@ -70,3 +71,47 @@ Resultados ejecutados en esta entrega:
 APK debug generado en `frontend/metropolitano-mobile-app/MetropolitanoMobileApp/android/app/build/outputs/apk/debug/app-debug.apk`. Requiere Metro; no es una distribución firmada ni un APK autónomo de publicación. Solo se compiló la ABI arm64-v8a.
 
 Las pruebas HTTP se ejecutaron con una base en memoria y un servidor temporal en 127.0.0.1:18080, que se detuvo al terminar. El alias M: queda disponible para reconstruir sin el problema de rutas largas. Los logs son locales e ignorados por Git. El backend y la app móvil están en repositorios Git diferentes según la estructura original; no se hicieron commits.
+
+## Revisión de criterios del APF 3
+
+| Criterio | Implementado en el proyecto | Pendiente para fortalecer la entrega |
+|---|---|---|
+| 1. Cloud y DevOps | `.github/workflows/ci-cd.yml` ejecuta lint, pruebas y construcción de imagen; el frontend, Spring y APF3 están publicados en Render con despliegue desde Git y health checks. | El plan gratuito suspende APIs en inactividad; H2 es efímera. AWS/ECS, rollback automatizado y observabilidad avanzada no están implementados. Docker no se validó localmente. |
+| 2. Búsqueda y enrutamiento | `apf3/search.py` implementa BFS, DFS, A* y Hill Climbing sobre el grafo; incluye penalización de incidencias y comparación de métricas. | Contrastar grafo, tiempos y penalizaciones con fuentes oficiales autorizadas; documentar cuándo los algoritmos no garantizan la ruta óptima y validar casos límite. |
+| 3. Regresión y clasificación | `apf3/data_pipeline.py` genera el conjunto reproducible de 5.000 filas; `apf3/experiment.py` implementa los modelos de ETA y saturación solicitados con métricas y partición de datos. | Sustituir o contrastar los datos sintéticos con datos operativos autorizados y anonimizados; repetir la evaluación con validación cruzada y reportar resultados reproducibles, sin presentar predicciones como tiempos reales. |
+| 4. Modelos y ensambles | `apf3/experiment.py` evalúa SVM, KNN, árbol, Gradient Boosting y XGBoost, con métricas comparativas e importancia de variables cuando el modelo la ofrece. | Analizar errores, desbalance y variabilidad entre particiones; justificar la selección por resultados observados. No afirmar que XGBoost supera siempre a los modelos individuales. |
+| 5. Sustentación y código | API APF3, backend Spring y clientes web/móvil; registro académico con BCrypt, acceso de presentación, pruebas automatizadas y documentación de límites y trade-offs. | Presentar evidencia de los despliegues y resultados; completar pruebas manuales de teclado/lector de pantalla, contraste y dispositivos. No se afirma certificación formal ni autenticación de producción. |
+
+### Estimación orientativa según la rúbrica (máximo 20 puntos)
+
+Esta autoevaluación usa los cinco criterios de la rúbrica, con 4 puntos cada
+uno. Es una estimación de preparación basada en el repositorio y las pruebas,
+no una calificación oficial ni una garantía de nota.
+
+| Criterio | Estimación | Evidencia y motivo |
+|---|---:|---|
+| 1. Cloud & DevOps | 3/4 | Tres servicios publicados en Render y CI/CD desde Git; falta explicar y demostrar estrategia de disponibilidad, persistencia, observabilidad y rollback. |
+| 2. Fundamentos de IA y búsqueda | 4/4 | BFS, DFS, A* y Hill Climbing sobre un espacio de estados definido y comparación de sus límites; el grafo sigue siendo sintético. |
+| 3. Regresión y clasificación | 4/4 | Modelos y métricas reproducibles, comparación e interpretación explícita; los datos son generados y no validan desempeño real. |
+| 4. Machine Learning | 4/4 | SVM, KNN, árbol y Boosting evaluados con métricas comparativas; se evita afirmar que un ensamble siempre gana. |
+| 5. Sustentación y código | 3/4 | Código organizado, pruebas, despliegue y límites documentados; falta evidencia de evaluación manual de accesibilidad y de dispositivos. |
+| **Total estimado** | **18/20** | Para defenderlo, mostrar pruebas, despliegues y resultados; explicar claramente datos sintéticos, limitaciones gratuitas y decisiones técnicas. |
+
+### Lista priorizada de mejoras
+
+1. **Datos y validez del modelo:** conseguir datos autorizados y anonimizados, documentar su procedencia y periodo, comparar el rendimiento contra una línea base y volver a entrenar/evaluar. Hasta entonces, los datos y resultados de APF3 son sintéticos y académicos.
+2. **Infraestructura:** documentar el despliegue actual de Render y sus límites; construir y probar el contenedor; después, preparar una cuenta AWS de prueba con límites de gasto, IAM mínimo, secretos fuera del repositorio, health checks y procedimiento de reversión. No desplegar a producción sin autorización.
+3. **Accesibilidad:** revisar todas las pantallas con teclado, lector de pantalla y medición de contraste; corregir los hallazgos y guardar evidencia de la evaluación.
+4. **Integración y dispositivos:** verificar de extremo a extremo los estados de API no disponible, errores y carga, y probar la aplicación en Android/iOS objetivo.
+5. **Sustentación:** incluir resultados, limitaciones, decisiones de diseño y evidencia de pruebas; la nota final depende de la evaluación académica y no se puede garantizar solo con código.
+
+### Análisis de resultados para la sustentación
+
+Los valores de [resultados.json](../apf3/resultados.json) corresponden a una partición 80/20 (4.000/1.000 filas) de datos generados artificialmente con semilla 42. No son una estimación de rendimiento en estaciones reales.
+
+- **ETA:** la regresión lineal obtuvo R² 0,957 y RMSE 1,978; los modelos polinómico, Lasso y Ridge quedaron cerca (R² 0,956). En este conjunto sintético la complejidad adicional no mejoró la métrica de la regresión lineal. La selección de un modelo más complejo debe justificarse con nuevos datos y validación.
+- **Saturación:** XGBoost obtuvo accuracy 0,881, F1 0,832 y AUC 0,945; SVM tuvo la accuracy más alta (0,882) y la regresión logística la AUC más alta (0,946). Por ello no se concluye que XGBoost sea superior en general. La elección depende del costo relativo de falsos positivos/falsos negativos, la latencia y la métrica priorizada; en el caso medido, XGBoost no domina todas las métricas.
+- **Búsqueda:** en el escenario de ejemplo, A* eligió una ruta de 19 min en el grafo y evitó Caquetá con la penalización activa. BFS y DFS sirven como comparación no informada (BFS prioriza cantidad de aristas y DFS depende del orden); Hill Climbing puede quedarse en un óptimo local. Estos minutos y tiempos de ejecución pertenecen exclusivamente al grafo inventado.
+- **Cloud/DevOps:** frontend y APIs están desplegados en Render y el workflow prueba lint, pruebas y construcción de imagen. El paso de ECS se ejecuta solo tras configurar cuenta, permisos y variables; no se ha ejecutado ni verifica por sí solo observabilidad, rollback o funcionamiento continuo. El plan gratuito puede suspender las APIs.
+
+En la exposición, presentar estas limitaciones y explicar los trade-offs es parte de sustentar el trabajo: las métricas altas sobre datos sintéticos no prueban generalización a operaciones reales.

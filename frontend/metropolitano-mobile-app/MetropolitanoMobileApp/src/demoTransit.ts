@@ -1,6 +1,6 @@
 import { fixtures } from './domain';
 
-export type DemoPlan = { origin: string; destinoNombre: string; tiempo: string; transbordos: number; linea: string; paradas: string[] };
+export type DemoPlan = { origin: string; destinoNombre: string; tiempo: string; transbordos?: number; linea: string; paradas: string[] };
 export const demoStations = [...new Set(Object.values(fixtures.rutas).flatMap(r => r.paradas))].sort();
 // Fictional, bidirectional connections derived exclusively from the HTML.
 // Equal time per segment is an academic approximation, not operational data.
@@ -36,5 +36,5 @@ export function planDemo(origin: string, destination: string): DemoPlan | null {
 
 export function demoArrivals(station: string) {
   return [...new Set(Object.values(fixtures.rutas).filter(r => r.paradas.includes(station)).map(r => r.linea))]
-    .slice(0, 3).map((line, i) => ({ line, platform: `Andén de prueba ${i + 1}`, seconds: (i + 1) * 180 }));
+    .slice(0, 3).map((line, i) => ({ line, platform: `Andén referencial ${i + 1}`, seconds: (i + 1) * 180 }));
 }

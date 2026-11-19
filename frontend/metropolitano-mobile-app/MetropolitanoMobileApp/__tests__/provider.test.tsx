@@ -59,3 +59,36 @@ test('invalid profile does not overwrite saved profile', async () => {
   });
   expect(app.state.profile).toEqual(saved);
 });
+test('registration creates an account and establishes a connected session', async () => {
+  const fetchMock = jest.spyOn(globalThis, 'fetch');
+  fetchMock.mockResolvedValueOnce({
+    ok: true,
+    status: 200,
+    json: async () => ({ token: 'registration-token' }),
+  } as Response);
+  fetchMock.mockResolvedValueOnce({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      ...initialState(),
+      profile: { ...initialState().profile, fullName: 'Ana Torres' },
+    }),
+  } as Response);
+  await act(async () => {
+    await app.register({
+      fullName: 'Ana Torres',
+      phone: '912345678',
+      dni: '12345678',
+      email: 'ana@example.test',
+      password: 'ClaveAcademica123',
+    });
+  });
+  expect(app.mode).toBe('connected');
+  expect(app.state.profile.fullName).toBe('Ana Torres');
+  expect(fetchMock.mock.calls[0][0]).toContain('/register');
+  expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toMatchObject({
+    phone: '912345678',
+    password: 'ClaveAcademica123',
+  });
+  fetchMock.mockRestore();
+});

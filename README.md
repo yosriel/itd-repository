@@ -16,6 +16,11 @@ Colores, fuentes e imágenes provienen del HTML final. Las fotografías y logoti
 
 ## Estructura
 
+El módulo [APF3](apf3/README.md) implementa un microservicio Python reproducible
+para búsqueda y modelos con datos sintéticos. El planeador web y móvil conectado
+consume sus resultados; las pantallas offline conservan su cálculo local. No
+reemplaza las alertas, el backend Java, ni es un sistema oficial o en tiempo real.
+
 ```text
 backend/metropolitano-backend-api/                    Spring Boot 4.1.1 / Java 21
 frontend/metropolitano-mobile-app/MetropolitanoMobileApp/  React Native 0.87.1
@@ -23,6 +28,23 @@ docs/METROPOLITANO_DESARROLLO.md                       Especificación extensa
 docs/reference/metropolitano_perfil.html              Referencia original
 docs/IMPLEMENTACION.md                                Estado y diferencias
 ```
+
+### Integración experimental APF3
+
+En una terminal inicia la API Python desde la raíz:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r apf3\requirements.txt
+.\.venv\Scripts\python.exe -m apf3.experiment
+.\.venv\Scripts\python.exe -m uvicorn apf3.api:app --host 127.0.0.1 --port 8001
+```
+
+En otra terminal inicia Spring y la web como se indica abajo. El planeador
+conectado solicita A*, ETA Ridge y clasificación XGBoost al servicio Python;
+permite elegir los escenarios sintéticos de hora punta/valle e incidencia. El
+modelo Ridge usa entradas sintéticas y no calcula el ETA de la ruta A*. No se
+debe interpretar como dato operativo. Ver [guía, pruebas, API y despliegue
+opcional](apf3/README.md).
 
 El proyecto móvil ya estaba registrado como repositorio Git anidado (gitlink) en la carpeta madre. Se conservó esa estructura y no se hicieron commits. Para versionar la entrega hay que guardar los cambios en el repositorio móvil y luego actualizar su referencia en el padre; el padre por sí solo no registra cada archivo móvil. No se modificó el historial ni se eliminaron metadatos Git.
 
@@ -68,15 +90,17 @@ npm run android
 
 En esta ruta de Windows utiliza el alias corto explicado más abajo también para `npm start` y `npm run android` (desde `M:\`). Evita regenerar cachés nativas desde la ruta larga.
 
-Al entrar, usar celular ficticio `987654321` y DNI `76543210`. “Ingresar a la demo conectada” consulta Spring; “Explorar demo sin conexión” permite navegar sin backend, con cambios solo en memoria. El token conectado tampoco se persiste en almacenamiento móvil; al reiniciar la app se vuelve a ingresar y se recuperan los datos del backend usando el **celular original de acceso**. Cambiar el celular en Perfil cambia el dato visible, no ese identificador demo.
+En la pantalla de acceso puedes crear una cuenta académica con datos de prueba; el ingreso conectado utiliza el celular y la contraseña de esa cuenta. También puedes usar “Entrar a la presentación”, que abre el perfil de presentación sin registrar una cuenta, o “Explorar sin conexión”, que permite navegar sin backend y conserva los cambios solo en memoria. No uses contraseñas ni datos personales reales. El token conectado no se persiste en almacenamiento móvil: al reiniciar la app debes volver a ingresar con el celular original de la cuenta para recuperar los datos del backend. Cambiar el celular en Perfil cambia el dato visible, no ese identificador de acceso.
 
-La API se configura en `src/api.ts` y usa `http://localhost:8080/api/v1/demo`. Para Android por USB o emulador, ejecutar `adb reverse tcp:8080 tcp:8080`; `android:usb` configura este enlace automáticamente junto al de Metro. Después de reconectar el teléfono puede ser necesario repetirlo. Usar HTTP solo en desarrollo; una futura versión real necesitará HTTPS y autenticación propia. No hay conexión automática a un proveedor público.
+La API de Spring se configura en `src/api.ts` y usa `http://localhost:8080/api/v1/demo`; la API experimental APF3 usa `http://localhost:8001`. Para Android por USB, `android:usb` configura automáticamente los reenvíos de Metro, Spring (8080) y APF3 (8001). Después de reconectar el teléfono puede ser necesario repetirlos. Usar HTTP solo en desarrollo; una futura versión real necesitará HTTPS y autenticación propia. No hay conexión automática a un proveedor público.
 
 Las fuentes ya están enlazadas. Para cambiar o volver a enlazar activos: `npx react-native-asset`. En iOS ejecutar la instalación de pods siguiendo el README móvil original y reconstruir en macOS; no se compiló iOS desde Windows.
 
 ### Rutas largas en Windows
 
 Para un telefono Android por USB, la opcion recomendada es ejecutar desde la carpeta movil `npm run start:usb -- --port 8082` y, en otra terminal, `npm run android:usb -- --port 8082`. Estos comandos crean/verifican M: en la sesion del usuario. El segundo conecta el puerto USB y usa `--no-packager`, por lo que no intenta abrir un segundo Metro. `npm run check:usb` comprueba el alias sin instalar nada. Una unidad M: que pertenezca a otra carpeta no se modifica.
+
+El comando `android:usb` regenera la configuración de autolinking si fue creada usando otra ruta, para evitar que Gradle mezcle `C:` y `M:`. El SDK de Android debe estar configurado con `ANDROID_HOME` en la terminal que ejecuta el comando.
 
 La ruta completa del móvil supera límites prácticos de CMake/Ninja en dependencias nativas. Se puede crear un alias de unidad sin mover archivos:
 
@@ -103,6 +127,29 @@ Todas las rutas siguientes pertenecen a este proyecto; **no son servicios de ATU
 | PATCH `/api/v1/demo/preferences` | `{notifications}` |
 | POST `/api/v1/demo/alerts/read-all` | Lectura global de ejemplos |
 | POST `/api/v1/demo/recharges` | `{amount,method}` y cabecera `Idempotency-Key` |
+| POST `/api/v1/demo/assistant` | `{message}` (1–1000 caracteres) → `{reply}`; requiere sesión conectada y clave Gemini |
+
+### Asistente de IA (demo)
+
+El backend usa el SDK oficial **Google Gen AI para Java 2.4.0** con el modelo `gemini-3.5-flash-lite`, compatible con Spring Boot y Java 21; `@google/genai` es la variante para JavaScript y no se instala en la aplicación móvil. Maven descarga el SDK declarado en `pom.xml` con:
+
+```powershell
+Set-Location C:\Metropolitano\itd-repository\backend\metropolitano-backend-api
+.\mvnw.cmd -DskipTests package
+```
+
+Obtén una clave en Google AI Studio y asígnala únicamente en la terminal del servidor antes de iniciarlo:
+
+```powershell
+$env:GEMINI_API_KEY = 'TU_CLAVE'
+.\mvnw.cmd spring-boot:run
+```
+
+No escribas ni compartas tu clave real en archivos, código, frontend o capturas. `.env.example` documenta el nombre; Spring no carga automáticamente ese archivo, por lo que hay que definir la variable de entorno. Para Android, inicia una sesión conectada y configura `adb reverse tcp:8080 tcp:8080` como se indica arriba.
+
+El asistente se abre desde el botón flotante «IA» en la app móvil y la vista web; permite escribir o enviar una pregunta sugerida con un clic y ofrece accesos a Inicio, Rutas, Alertas y Cuenta. Los accesos los elige el usuario, no navegan automáticamente según la respuesta de IA. Sin conexión indica que necesita una sesión conectada para las preguntas. Cada pregunta es independiente y se envía a Google Gemini con el catálogo de estaciones, rutas y alertas **simuladas**, las reglas de recarga demo y el saldo y hasta cinco recargas ficticias de la sesión. No se envían automáticamente el perfil, DNI, celular ni correo del usuario; no incluyas datos personales ni de pago en las preguntas. Gemini puede equivocarse, y no hay información en vivo, pasarela de pago ni conexión oficial con ATU. La sesión de demostración no es autenticación de producción: no publiques esta API sin autenticación robusta, límites de uso y controles adicionales.
+
+Google ofrece una capa gratuita sujeta a disponibilidad, cuota, región y condiciones; pueden aplicarse cargos si se habilita facturación. Consulta [precios de Gemini](https://ai.google.dev/gemini-api/docs/pricing) y condiciones antes de usarla. Sin clave, o si el proveedor falla, la aplicación mostrará un error en lugar de simular una respuesta.
 
 Rutas privadas: `Authorization: Bearer <token>`. Métodos permitidos de recarga: `YAPE_DEMO` y `CARD_DEMO`. Importes: 5, 10, 20 o 50 PEN. Dinero decimal exacto en servidor. La clave idempotente se conserva al reintentar; cambiar importe o método con la misma clave genera 409. La transacción bloquea la cuenta para evitar perder actualizaciones simultáneas. Cada recarga guarda importe, método y saldo posterior; los tres movimientos iniciales son ilustrativos, no un ledger contable completo.
 

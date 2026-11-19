@@ -1,7 +1,7 @@
 import './global.css';
 import React from 'react';
 import { StatusBar, Text, View } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { createNavigationContainerRef, NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { BottomTabNavigationOptions } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -18,10 +18,12 @@ import { Home, Alerts } from './src/screens/HomeAlerts';
 import { Planner, Detail } from './src/screens/Routes';
 import { Account, Profile, Settings } from './src/screens/Account';
 import { colors } from './src/ui';
+import { Assistant } from './src/Assistant';
 
 const Tabs = createBottomTabNavigator<TabParams>();
 const RouteStack = createNativeStackNavigator<RoutesStackParams>();
 const AccountStack = createNativeStackNavigator<AccountStackParams>();
+const navigationRef = createNavigationContainerRef<TabParams>();
 const noHeader = { headerShown: false };
 function Routes() {
   return (
@@ -63,7 +65,7 @@ function Content() {
     <View className="flex-1">
       <StatusBar barStyle="dark-content" />
       {mode ? (
-        <NavigationContainer>
+        <NavigationContainer ref={navigationRef}>
           <Tabs.Navigator screenOptions={tabOptions}>
             <Tabs.Screen
               name="Home"
@@ -93,6 +95,9 @@ function Content() {
       ) : (
         <Auth />
       )}
+      {mode && <Assistant onNavigate={tab => {
+        if (navigationRef.isReady()) { navigationRef.navigate(tab); }
+      }} />}
       {toast !== '' && (
         <View
           pointerEvents="none"

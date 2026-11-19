@@ -22,6 +22,20 @@ function main() {
   if (!fs.existsSync(path.join(alias, 'node_modules/react-native-safe-area-context/android'))) {
     throw new Error('Faltan dependencias. Ejecuta npm ci dentro del proyecto movil.');
   }
+  const sdkCandidates = [
+    process.env.ANDROID_HOME,
+    process.env.ANDROID_SDK_ROOT,
+    process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, 'Android', 'Sdk'),
+  ].filter(Boolean);
+  const sdkRoot = sdkCandidates.find(candidate =>
+    fs.existsSync(path.join(candidate, 'platform-tools', 'adb.exe')),
+  );
+  if (!sdkRoot) {
+    throw new Error('No se encontro Android SDK. Instala Android Studio o configura ANDROID_HOME.');
+  }
+  process.env.ANDROID_HOME = sdkRoot;
+  process.env.ANDROID_SDK_ROOT = sdkRoot;
+  process.env.PATH = `${path.join(sdkRoot, 'platform-tools')}${path.delimiter}${process.env.PATH}`;
   const mode = process.argv[2];
   const portIndex = process.argv.indexOf('--port');
   const port = portIndex === -1 ? '8082' : process.argv[portIndex + 1];
@@ -42,6 +56,16 @@ function main() {
     if (reverse.status !== 0) { throw new Error('No se pudo conectar el puerto por USB.'); }
     const backendReverse = spawnSync('adb', ['-s', connected[0][1], 'reverse', 'tcp:8080', 'tcp:8080'], { stdio: 'inherit' });
     if (backendReverse.status !== 0) { throw new Error('No se pudo conectar Spring por USB.'); }
+    const aiReverse = spawnSync('adb', ['-s', connected[0][1], 'reverse', 'tcp:8001', 'tcp:8001'], { stdio: 'inherit' });
+    if (aiReverse.status !== 0) { throw new Error('No se pudo conectar la API de IA por USB.'); }
+    const autolinking = path.join(alias, 'android', 'build', 'generated', 'autolinking', 'autolinking.json');
+    if (fs.existsSync(autolinking)) {
+      const config = JSON.parse(fs.readFileSync(autolinking, 'utf8'));
+      if (typeof config.root !== 'string' || path.resolve(config.root).toLowerCase() !== path.resolve(alias).toLowerCase()) {
+        fs.unlinkSync(autolinking);
+        console.log('Se regenerara la configuracion de dependencias para la unidad M:.');
+      }
+    }
   }
   const args = mode === 'start'
     ? ['start', '--port', port, '--reset-cache']

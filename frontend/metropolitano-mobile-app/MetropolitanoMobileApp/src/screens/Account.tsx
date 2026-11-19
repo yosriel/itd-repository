@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -7,8 +7,11 @@ import {
   Pressable,
   ScrollView,
   Text,
+  TextInput,
   View,
 } from 'react-native';
+import qrcode from 'qrcode-generator';
+import Svg, { Rect } from 'react-native-svg';
 import LinearGradient from 'react-native-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DemoCard } from '../DemoCard';
@@ -140,7 +143,7 @@ export function Account({
           </View>
         </Card>
       ))}
-      <Sub>Saldo e historial simulados · Prototipo académico</Sub>
+      <Sub>Saldo e historial de prueba</Sub>
       <RechargeSheet visible={sheet} close={() => setSheet(false)} />
     </Page>
   );
@@ -157,7 +160,33 @@ function RechargeSheet({
   const [amount, setAmount] = useState<number | null>(null);
   const [method, setMethod] = useState<Recharge['method'] | null>(null);
   const [pending, setPending] = useState(false);
+  const [step, setStep] = useState<'select' | 'processing' | 'receipt'>(
+    'select',
+  );
+  const [reference, setReference] = useState('');
+  const [completedAt, setCompletedAt] = useState('');
   const key = useRef<string | null>(null);
+  useEffect(() => {
+    if (visible) {
+      setAmount(null);
+      setMethod(null);
+      setPending(false);
+      setStep('select');
+      setReference('');
+      setCompletedAt('');
+      key.current = null;
+    }
+  }, [visible]);
+  const paymentQr = useMemo(() => {
+    if (!amount || method !== 'YAPE_DEMO') {
+      return null;
+    }
+    const qr = qrcode(0, 'M');
+    qr.addData(`SIMULACION-NO-COBRABLE|METROPOLITANO|${amount}`);
+    qr.make();
+    return qr;
+  }, [amount, method]);
+  const retrying = key.current !== null;
   async function confirm() {
     if (!amount || !method) {
       notify('Elige un monto y un método de pago');
@@ -167,19 +196,28 @@ function RechargeSheet({
       .toString(36)
       .slice(2, 12)}`;
     setPending(true);
+    setStep('processing');
     try {
+      await new Promise<void>(resolve => setTimeout(resolve, 1600));
       await recharge(amount, method, key.current);
-      key.current = null;
-      setPending(false);
-      setAmount(null);
-      setMethod(null);
-      close();
+      setReference(`SIM-${key.current.slice(-8).toUpperCase()}`);
+      setCompletedAt(
+        new Date().toLocaleString('es-PE', {
+          timeZone: 'America/Lima',
+          dateStyle: 'short',
+          timeStyle: 'short',
+        }),
+      );
+      setStep('receipt');
     } catch (e) {
+      setStep('select');
       notify(
         e instanceof Error
-          ? `${e.message}. Reintenta con la misma selección.`
+          ? `${e.message}. Puedes reintentar con la misma selección.`
           : 'No se pudo completar',
       );
+    } finally {
+      setPending(false);
     }
   }
   return (
@@ -188,7 +226,7 @@ function RechargeSheet({
       transparent
       animationType="slide"
       onRequestClose={() => {
-        if (!busy) {
+        if (!busy && !pending) {
           close();
         }
       }}
@@ -201,75 +239,223 @@ function RechargeSheet({
         >
           <View className="flex-row justify-between">
             <Text className="font-title text-[21px] text-navy">
-              Recargar saldo
+              {step === 'receipt'
+                ? 'Comprobante de simulación'
+                : 'Recargar saldo'}
             </Text>
             <Pressable
-              accessibilityLabel="Cerrar recarga"
+              accessibilityLabel="Cerrar recarga de prueba"
               accessibilityRole="button"
-              disabled={busy}
+              disabled={busy || pending}
               onPress={close}
               hitSlop={12}
             >
               <X color={colors.muted} />
             </Pressable>
           </View>
-          <Sub>Recarga ficticia. No se realizará ningún cobro.</Sub>
-          <Heading>Elige un monto</Heading>
-          <View className="flex-row gap-2">
-            {[5, 10, 20, 50].map(value => (
-              <Pressable
-                key={value}
-                disabled={pending}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: amount === value }}
-                onPress={() => setAmount(value)}
-                className={`flex-1 items-center rounded-xl border py-3 ${
-                  amount === value ? 'border-amber bg-[#FDF1DC]' : 'border-line'
-                }`}
+          {step === 'receipt' ? (
+            <View className="gap-4">
+              <View
+                accessibilityRole="alert"
+                className="items-center gap-2 rounded-2xl border border-[#E8C882] bg-[#FFF8E8] p-5"
               >
-                <Text className="font-sans font-bold text-navy">
-                  S/ {value}
+                <Text className="font-title text-[20px] text-navy">
+                  Recarga de prueba registrada
                 </Text>
-              </Pressable>
-            ))}
-          </View>
-          <Heading>Método de pago</Heading>
-          {(['YAPE_DEMO', 'CARD_DEMO'] as const).map(value => (
-            <Pressable
-              key={value}
-              disabled={pending}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: method === value }}
-              onPress={() => setMethod(value)}
-              className={`rounded-xl border p-4 ${
-                method === value ? 'border-steel bg-[#E4F7EE]' : 'border-line'
-              }`}
+                <Text className="font-sans text-[30px] font-bold text-navy">
+                  {money(amount ?? 0)}
+                </Text>
+                <Text className="text-center font-sans text-[13px] leading-5 text-ink">
+                  No hubo pago, transferencia ni cargo real. Este comprobante
+                  solo corresponde a una simulación académica.
+                </Text>
+              </View>
+              <View className="gap-2 rounded-xl border border-line p-4">
+                <Sub>
+                  Método de muestra:{' '}
+                  {method === 'YAPE_DEMO' ? 'Yape (simulación)' : 'Tarjeta (simulación)'}
+                </Sub>
+                <Sub>Referencia de simulación: {reference}</Sub>
+                <Sub>Fecha y hora: {completedAt}</Sub>
+                <Sub>Saldo de prueba actualizado en la aplicación.</Sub>
+              </View>
+              <Button
+                title="Cerrar comprobante"
+                variant="ghost"
+                onPress={close}
+              />
+            </View>
+          ) : step === 'processing' ? (
+            <View
+              accessibilityRole="progressbar"
+              accessibilityLabel="Procesando una simulación de recarga"
+              className="items-center gap-3 rounded-2xl bg-[#F4F7F9] p-8"
             >
-              <Heading>
-                {value === 'YAPE_DEMO'
-                  ? 'Yape · Simulado'
-                  : 'Tarjeta de crédito / débito · Simulada'}
-              </Heading>
-            </Pressable>
-          ))}
-          {pending && !busy && (
-            <Sub>
-              Resultado pendiente de comprobar. Reintentar usa la misma clave y
-              evita duplicar la operación.
-            </Sub>
+              <Text className="font-title text-[18px] text-navy">
+                Preparando simulación…
+              </Text>
+              <Sub>No se está realizando un cobro real.</Sub>
+            </View>
+          ) : (
+            <>
+              <View
+                accessibilityRole="alert"
+                className="rounded-xl border border-[#E8C882] bg-[#FFF8E8] p-3"
+              >
+                <Heading>Entorno académico · Sin pagos reales</Heading>
+                <Sub>
+                  No se cobra dinero ni se conecta con Yape o bancos. No
+                  ingreses números de tarjeta, vencimiento, CVV ni claves.
+                </Sub>
+              </View>
+              <Heading>Elige un monto</Heading>
+              <View className="flex-row gap-2">
+                {[5, 10, 20, 50].map(value => (
+                  <Pressable
+                    key={value}
+                    disabled={pending || retrying}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: amount === value }}
+                    onPress={() => setAmount(value)}
+                    className={`flex-1 items-center rounded-xl border py-3 ${
+                      amount === value ? 'border-amber bg-[#FDF1DC]' : 'border-line'
+                    }`}
+                  >
+                    <Text className="font-sans font-bold text-navy">
+                      S/ {value}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Heading>Vista de método (no cobrable)</Heading>
+              {(['YAPE_DEMO', 'CARD_DEMO'] as const).map(value => (
+                <Pressable
+                  key={value}
+                  disabled={pending || retrying}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: method === value }}
+                  onPress={() => setMethod(value)}
+                  className={`rounded-xl border p-4 ${
+                    method === value ? 'border-steel bg-[#E4F7EE]' : 'border-line'
+                  }`}
+                >
+                  <Heading>
+                    {value === 'YAPE_DEMO'
+                      ? 'Yape · vista de ejemplo'
+                      : 'Tarjeta · vista de ejemplo'}
+                  </Heading>
+                  <Sub>
+                    {value === 'YAPE_DEMO'
+                      ? 'QR académico que no inicia pagos.'
+                      : 'Tarjeta de muestra; no se solicitan datos bancarios.'}
+                  </Sub>
+                </Pressable>
+              ))}
+              {method === 'YAPE_DEMO' && paymentQr && (
+                <View className="items-center gap-2 rounded-2xl border border-line p-4">
+                  <Text className="font-sans font-bold text-[#5B2C83]">
+                    QR de muestra · No es un QR de pago
+                  </Text>
+                  <Svg
+                    width={190}
+                    height={190}
+                    viewBox={`0 0 ${paymentQr.getModuleCount() + 8} ${paymentQr.getModuleCount() + 8}`}
+                    accessibilityLabel="Código QR de simulación; no permite pagar"
+                  >
+                    <Rect
+                      width={paymentQr.getModuleCount() + 8}
+                      height={paymentQr.getModuleCount() + 8}
+                      fill="white"
+                    />
+                    {Array.from(
+                      { length: paymentQr.getModuleCount() },
+                      (_, row) =>
+                        Array.from(
+                          { length: paymentQr.getModuleCount() },
+                          (__, col) =>
+                            paymentQr.isDark(row, col) ? (
+                              <Rect
+                                key={`${row}-${col}`}
+                                x={col + 4}
+                                y={row + 4}
+                                width={1}
+                                height={1}
+                                fill="#21152A"
+                              />
+                            ) : null,
+                        ),
+                    )}
+                  </Svg>
+                  <Sub>Destino de muestra: Metropolitano · proyecto académico</Sub>
+                </View>
+              )}
+              {method === 'CARD_DEMO' && (
+                <View className="gap-2 rounded-xl bg-[#F4F7F9] p-4">
+                  <Heading>Tarjeta de muestra · No cobrable</Heading>
+                  <Sub>
+                    Campos visuales bloqueados. No ingreses datos de una tarjeta
+                    real; nada se guarda ni se envía.
+                  </Sub>
+                  <View className="gap-1">
+                    <Sub>Titular de muestra</Sub>
+                    <TextInput
+                      accessibilityLabel="Titular de muestra, campo bloqueado"
+                      editable={false}
+                      value="USUARIO DE PRUEBA"
+                      className="rounded-xl border border-line bg-white px-4 py-3 font-sans text-[14px] text-ink"
+                    />
+                  </View>
+                  <View className="gap-1">
+                    <Sub>Número de muestra</Sub>
+                    <TextInput
+                      accessibilityLabel="Número de tarjeta de muestra, campo bloqueado"
+                      editable={false}
+                      value="•••• •••• •••• 4242"
+                      className="rounded-xl border border-line bg-white px-4 py-3 font-sans text-[14px] text-ink"
+                    />
+                  </View>
+                  <View className="flex-row gap-3">
+                    <View className="flex-1 gap-1">
+                      <Sub>Vencimiento de muestra</Sub>
+                      <TextInput
+                        accessibilityLabel="Vencimiento de muestra, campo bloqueado"
+                        editable={false}
+                        value="12/30"
+                        className="rounded-xl border border-line bg-white px-4 py-3 font-sans text-[14px] text-ink"
+                      />
+                    </View>
+                    <View className="flex-1 gap-1">
+                      <Sub>CVV de muestra</Sub>
+                      <TextInput
+                        accessibilityLabel="CVV de muestra, campo bloqueado"
+                        editable={false}
+                        value="•••"
+                        className="rounded-xl border border-line bg-white px-4 py-3 font-sans text-[14px] text-ink"
+                      />
+                    </View>
+                  </View>
+                </View>
+              )}
+              {retrying && !pending && (
+                <Sub>
+                  No se pudo confirmar el resultado. Reintenta con la misma
+                  selección; se conservará la referencia de esta operación.
+                </Sub>
+              )}
+              <Button
+                title={
+                  busy || pending
+                    ? 'Registrando simulación…'
+                    : retrying
+                      ? 'Reintentar simulación'
+                      : `Simular recarga · ${money(amount ?? 0)}`
+                }
+                variant="amber"
+                onPress={confirm}
+                disabled={busy || pending || !amount || !method}
+              />
+            </>
           )}
-          <Button
-            title={
-              busy
-                ? 'Registrando…'
-                : pending
-                ? 'Reintentar recarga ficticia'
-                : 'Recargar ahora · Demo'
-            }
-            variant="amber"
-            onPress={confirm}
-            disabled={busy}
-          />
         </ScrollView>
       </View>
     </Modal>
@@ -328,7 +514,7 @@ export function Profile({
     },
     {
       title: 'Medios de pago',
-      sub: 'Opciones de recarga de demostración',
+      sub: 'Métodos disponibles en esta versión',
       icon: Wallet,
       action: () => navigation.navigate('Settings', { section: 'payments' }),
     },
@@ -352,7 +538,7 @@ export function Profile({
     },
     {
       title: 'Ayuda y soporte',
-      sub: 'Preguntas frecuentes del prototipo',
+      sub: 'Preguntas frecuentes',
       icon: CircleHelp,
       action: () => navigation.navigate('Settings', { section: 'help' }),
     },
@@ -436,7 +622,7 @@ export function Profile({
               <Text className="font-title text-[20px] text-navy">
                 {state.profile.fullName}
               </Text>
-              <Sub>Usuario de demostración</Sub>
+              <Sub>Cuenta de presentación</Sub>
             </View>
             {[rows.slice(0, 3), rows.slice(3, 6), rows.slice(6)].map(
               (group, groupIndex) => (
@@ -493,7 +679,7 @@ export function Settings({
   const content = {
     payments: {
       title: 'Medios de pago',
-      text: 'Yape y tarjeta son opciones de demostración dentro de Recargar saldo. No hay tarjetas bancarias vinculadas ni pasarela de pagos. No ingreses información financiera real.',
+      text: 'Yape y tarjeta permiten probar el flujo de recarga. No hay tarjetas bancarias vinculadas ni pasarela de pagos, y no se realizan cobros. No ingreses información financiera real.',
     },
     security: {
       title: 'Seguridad y acceso',
@@ -501,11 +687,11 @@ export function Settings({
     },
     privacy: {
       title: 'Privacidad',
-      text: 'Utiliza datos inventados. La demo conectada guarda perfil, saldo de prueba y preferencias en la base local del backend. La demo sin conexión se borra al cerrar sesión. Esta versión no solicita GPS ni envía notificaciones push. No contiene una integración oficial con ATU.',
+      text: 'Utiliza los datos asignados para la presentación. La cuenta conectada guarda perfil, saldo de prueba y preferencias en la base local del backend. El modo sin conexión se borra al cerrar sesión. Esta versión no solicita GPS ni envía notificaciones push. No contiene una integración oficial con ATU.',
     },
     help: {
       title: 'Ayuda y soporte',
-      text: '¿La recarga cobra dinero? No, solo suma saldo ficticio.\n\n¿Los buses están en vivo? No, sus estados y tiempos son ejemplos del HTML.\n\n¿Dónde se guarda mi perfil? En el backend al entrar a la demo conectada; sin conexión solo durante la sesión.\n\n¿Puedo consultar una tarjeta física? No.\n\nEste prototipo no tiene canal de atención oficial ni tickets de soporte.',
+      text: '¿La recarga cobra dinero? No, solo suma saldo de prueba.\n\n¿Los buses están en vivo? No, los estados y tiempos son referenciales.\n\n¿Dónde se guarda mi perfil? En el backend al ingresar conectado; sin conexión solo durante la sesión.\n\n¿Puedo consultar una tarjeta física? No.\n\nEsta versión no tiene canal de atención ni tickets de soporte.',
     },
   }[route.params.section];
   return (

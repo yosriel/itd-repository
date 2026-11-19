@@ -30,16 +30,16 @@ export function DemoCard({ visible, close }: { visible: boolean; close: () => vo
     <View className="flex-1 justify-center bg-black/50 px-5">
       <View className="max-h-[85%] w-full max-w-[440px] self-center rounded-3xl bg-white p-5">
         <ScrollView contentContainerClassName="items-center gap-4">
-          <Heading>Tarjeta digital · Demo</Heading>
+          <Heading>Tarjeta digital</Heading>
           <Sub>•••• 4417 · {money(state.balance)}</Sub>
-          <Svg width="100%" height={220} viewBox={`0 0 ${count + 8} ${count + 8}`} accessibilityLabel="QR de demostración sin validez para viajar">
+          <Svg width="100%" height={220} viewBox={`0 0 ${count + 8} ${count + 8}`} accessibilityLabel="Código QR de prueba; no válido para viajar">
             <Rect width={count + 8} height={count + 8} fill="white" />
             {Array.from({ length: count }, (_, row) => Array.from({ length: count }, (__, col) => code.isDark(row, col) ? <Rect key={`${row}-${col}`} x={col + 4} y={row + 4} width={1} height={1} fill="black" /> : null))}
           </Svg>
           <Text className="font-sans text-[13px] text-navy">Se renueva en {remaining} segundos</Text>
           <Sub>No válido en torniquetes. No contiene datos personales ni realiza cobros.</Sub>
           <View className="w-full gap-3">
-            <Button title="Simular lectura del QR" disabled={!!message} onPress={() => setMessage('Lectura de prueba completada. Saldo sin cambios.')} />
+            <Button title="Probar lectura del QR" disabled={!!message} onPress={() => setMessage('Lectura de prueba completada. Saldo sin cambios.')} />
             {message && <Text accessibilityRole="alert" className="font-sans text-[13px] text-steel">{message}</Text>}
             <Button title="Cerrar" variant="ghost" onPress={close} />
           </View>

@@ -139,8 +139,7 @@ export function Home() {
               Permite tu ubicación
             </Text>
             <Sub>
-              En el HTML esta función es simulada. Aquí puedes ver ese mismo
-              ejemplo sin compartir tu ubicación real.
+              Se mostrará una ubicación de referencia sin solicitar acceso al GPS.
             </Sub>
             <Button
               title="Ver ejemplo de ubicación"
@@ -173,7 +172,7 @@ export function Alerts() {
         <View className="flex-row items-center justify-between">
           <View className="flex-1">
             <Heading>Notificaciones push</Heading>
-            <Sub>Recibe avisos antes de llegar a la estación · Simulado</Sub>
+            <Sub>Configura tus preferencias de avisos para las estaciones</Sub>
           </View>
           <Switch
             accessibilityLabel="Preferencia de notificaciones"
