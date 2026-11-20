@@ -1,4 +1,8 @@
-# Metropolitano Lima en Expo
+# Metropolitano de Lima App
+
+[Descargar el APK para Android](https://metrolimaapp-android.vercel.app/metrolimaapp.apk). Abre el enlace desde tu teléfono, toca el archivo descargado y elige **Instalar**.
+
+Para consultar al asistente, inicia sesión, toca **IA** y elige una pregunta sugerida o escribe la tuya.
 
 La carpeta contiene el cliente Android, los componentes comunes y la vista web de Vite. Expo prebuild genera Android e iOS desde app.json. Los recursos de la aplicación viven en assets/. Para desarrollo usa Node 24.3+ o 26 y Expo SDK 58; para el APK local se requiere JDK 21 y Android SDK.
 
