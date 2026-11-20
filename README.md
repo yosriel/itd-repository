@@ -11,7 +11,7 @@ Aplicación académica de Android desarrollada con Expo y React Native, con una 
 | Spring | JDK 21, Spring Boot 4.1.3, Maven Wrapper 3.9.16 |
 | Modelos | Python 3.13, dependencias fijadas en apf3/requirements.txt |
 | Compilación Android | JDK 21, Android SDK, NDK y CMake. Expo genera Gradle y el proyecto Android. |
-| Datos | H2 para la prueba local; MySQL persistente y compartido para las réplicas en Vercel |
+| Datos | H2 para la prueba local, PostgreSQL de Neon para las réplicas en Vercel |
 
 ## Arrancar ambas APIs
 

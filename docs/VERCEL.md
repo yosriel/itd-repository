@@ -1,10 +1,10 @@
 # Publicar las APIs del APK y la web en Vercel
 
-El teléfono consulta directamente los dominios HTTPS de Spring y de la API de rutas. Cada servicio puede escalar y volver a arrancar independientemente. Spring guarda cuentas, saldo, recargas y los hashes de sesión en una base MySQL compartida. La API de rutas empaqueta los modelos entrenados en la imagen para atender predicciones después de cada arranque.
+El teléfono consulta directamente los dominios HTTPS de Spring y de la API de rutas. Cada servicio puede escalar y volver a arrancar independientemente. Spring guarda cuentas, saldo, recargas y los hashes de sesión en PostgreSQL. La API de rutas empaqueta los modelos entrenados en la imagen para atender predicciones después de cada arranque.
 
 ## Demo Android desplegada
 
-Metropolitano de Lima App usa [MetroLimaApp](https://metrolimaapp.vercel.app/health) para las rutas y [MetroLimaApp API](https://metrolimaapp-api.vercel.app/actuator/health) para las cuentas. Spring usa TiDB Cloud Starter en São Paulo. Las reglas de Vercel limitan por IP las operaciones POST de la demo a 30 y las predicciones a 40 por minuto.
+Metropolitano de Lima App usa [MetroLimaApp](https://metrolimaapp.vercel.app/health) para las rutas y [MetroLimaApp API](https://metrolimaapp-api.vercel.app/actuator/health) para las cuentas. Spring usa el recurso gratuito `metrolimaapp-db` de Neon en São Paulo. Las reglas de Vercel limitan por IP las operaciones POST de la demo a 30 y las predicciones a 40 por minuto.
 
 Desde la carpeta móvil, con JDK 21, Android SDK y las dependencias instaladas con `npm ci`, genera un APK que usa las dos APIs públicas:
 
@@ -22,13 +22,13 @@ Crea un equipo o espacio personal y tres proyectos con el mismo repositorio. El 
 
 | Proyecto | Carpeta raíz | Configuración de producción |
 |---|---|---|
-| MetroLimaApp API | backend/metropolitano-backend-api | Preset Container, PORT=10000, SPRING_PROFILES_ACTIVE=demo,mysql. Configurar DB_URL, DB_USER y DB_PASSWORD como variables del servidor. |
+| MetroLimaApp API | backend/metropolitano-backend-api | Preset Container, PORT=10000, SPRING_PROFILES_ACTIVE=demo,postgres. Configurar POSTGRES_DB_URL, POSTGRES_DB_USER y POSTGRES_DB_PASSWORD como secretos del servidor. |
 | MetroLimaApp | apf3 | Preset Container, PORT=10000. El Dockerfile entrena con el CSV versionado y Python 3.13. |
 | Web | frontend/metropolitano-mobile-app/MetropolitanoMobileApp | Vite, Node 24, npm ci, npm run build:web, salida build/web. |
 
-Aprovisiona MySQL accesible por TLS y crea el esquema de la demo. Configura el JDBC con `sslMode=VERIFY_IDENTITY`. Si el proveedor usa una CA privada, configura el truststore del cliente. La base en memoria o en el disco de un contenedor perdería los datos al escalar o reiniciar.
+Aprovisiona PostgreSQL desde la integración de Neon en Vercel. Usa la conexión directa para las migraciones y la conexión agrupada para la aplicación. Las dos URLs JDBC deben usar `sslmode=verify-full` y `sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory`. Las credenciales administrativas se obtienen de la integración con acceso autorizado al proyecto. En este despliegue, la integración se conectó al entorno Development para mantenerlas fuera del contenedor de producción.
 
-Para el despliegue de ITD, aplica las migraciones antes de publicar Spring. Inicia el JAR con el perfil `demo,mysql`, la URL JDBC y las credenciales del usuario de migración como variables de entorno. Escucha solo en localhost y espera que `/actuator/health` devuelva `UP`. Configura Spring en Vercel con `SPRING_FLYWAY_ENABLED=false` y un usuario de ejecución con `SELECT`, `INSERT`, `UPDATE` y `DELETE` sobre `demo_account`, `demo_recharge`, `demo_session` y `demo_session_guard`. Guarda `DB_URL`, `DB_USER` y `DB_PASSWORD` como secretos de producción. Conserva el usuario de migración fuera del runtime y repite el procedimiento antes de desplegar una versión que cambie el esquema o sus tablas.
+Aplica las migraciones antes de publicar Spring. Inicia el JAR con el perfil `demo,postgres`, `SPRING_FLYWAY_ENABLED=true`, la URL JDBC directa y las credenciales de migración como variables de entorno. Escucha solo en localhost y espera que `/actuator/health` devuelva `UP`. Configura Spring en Vercel con `SPRING_FLYWAY_ENABLED=false` y un usuario de ejecución con `CONNECT` a la base, `USAGE` en el esquema y permisos `SELECT`, `INSERT`, `UPDATE` y `DELETE` sobre `demo_account`, `demo_recharge`, `demo_session` y `demo_session_guard`. Guarda la conexión agrupada y las credenciales de ese usuario en `POSTGRES_DB_URL`, `POSTGRES_DB_USER` y `POSTGRES_DB_PASSWORD`. Repite el procedimiento antes de desplegar una versión que cambie el esquema o sus tablas.
 
 Para publicar manualmente desde un checkout limpio, ejecuta `vercel deploy --prod --project metrolimaapp-api --regions gru1` desde la carpeta de Spring. Para la API de rutas, ejecuta `vercel deploy --prod --project metrolimaapp` desde `apf3/`. Ambos proyectos usan el preset Container.
 
