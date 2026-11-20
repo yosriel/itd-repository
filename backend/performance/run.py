@@ -21,7 +21,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, ProxyHandler, build_opener
 
 ROOT = Path(__file__).resolve().parents[1]
-BACK = ROOT / 'backend/metropolitano-backend-api'
+BACK = ROOT / 'metropolitano-backend-api'
 JAR = BACK / 'target/metropolitano-backend-api-0.0.1-SNAPSHOT.jar'
 SCENARIO = dict(origen='Naranjal', destino='Estacion_Central', franja_horaria=7.75,
                 es_hora_punta=1, distancia_km=12, afluencia_anden=410,
@@ -118,7 +118,8 @@ def main():
         parser.error('Usa de 1 a 240 minutos')
     if not JAR.is_file():
         raise SystemExit('Compilar primero el JAR con Maven y Java 21')
-    python = [sys.executable, '-m', 'uvicorn', 'apf3.api:app', '--host', '127.0.0.1',
+    python = [sys.executable, '-m', 'uvicorn', '--app-dir', str(ROOT / 'metrolimaapp-rutas'),
+              'rutas.api:app', '--host', '127.0.0.1',
               '--port', '{port}', '--no-access-log']
     env = {'OMP_NUM_THREADS': '1', 'OPENBLAS_NUM_THREADS': '1'}
     java = str(Path(os.environ['JAVA_HOME']) / 'bin/java')

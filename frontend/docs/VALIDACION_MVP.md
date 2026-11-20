@@ -1,6 +1,6 @@
 # Validación del MVP académico
 
-> Documento histórico de la entrega anterior. Para reproducir la versión Expo conectada, consulta el [README vigente](../README.md) y la [entrega APF3](APF3_ENTREGA.md).
+> Documento histórico de la entrega anterior. Para reproducir la versión Expo conectada, consulta el [README vigente](../../backend/README.md) y la [entrega APF3](../../backend/docs/APF3_ENTREGA.md).
 
 Fecha: 12 de octubre de 2026.
 

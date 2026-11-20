@@ -7,21 +7,22 @@ Gemini es otra función y no sustituye estos experimentos.
 Todo el corredor, los tiempos y el dataset son **sintéticos**; no hay conexión
 con ATU, GPS, pagos ni datos reales. No usar para decisiones operativas.
 
-## Ejecutar en Windows desde la raíz del repositorio
+## Ejecutar en Windows desde backend/metrolimaapp-rutas
 
-Se requiere Python 3.13. En PowerShell:
+Se requiere Python 3.13. En PowerShell, desde esta carpeta:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -r apf3\requirements.txt
-.\.venv\Scripts\python.exe -m apf3.experiment
-.\.venv\Scripts\python.exe -m apf3.main
-.\.venv\Scripts\python.exe -m pytest apf3\tests -q
-.\.venv\Scripts\python.exe -m flake8 apf3 --max-line-length=88
+py -3.13 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m rutas.experiment
+.\.venv\Scripts\python.exe -m rutas.main
+.\.venv\Scripts\python.exe -m pytest tests -q
+.\.venv\Scripts\python.exe -m flake8 rutas tests --max-line-length=88
 ```
 
-El entrenamiento genera `apf3/data/metropolitano_operaciones_2026.csv` solo
+El entrenamiento genera `data/metropolitano_operaciones_2026.csv` solo
 si no existe; no reemplaza un archivo preexistente. Guarda el reporte
-actualizado en `apf3/resultados.json` y los modelos en `apf3/artifacts/`,
+actualizado en `resultados.json` y los modelos en `artifacts/`,
 carpeta ignorada por Git. En cada entrenamiento se reemplazan esos artefactos.
 Copia únicamente resultados obtenidos realmente al informe, indicando la
 semilla, versiones y la naturaleza sintética del conjunto.
@@ -44,10 +45,10 @@ orden; A* minimiza el costo de este grafo; Hill Climbing puede quedarse en un
 
 ## API local
 
-Después de entrenar, en otra terminal desde la raíz:
+Después de entrenar, en otra terminal desde esta carpeta:
 
 ```powershell
-.\.venv\Scripts\python.exe -m uvicorn apf3.api:app --host 127.0.0.1 --port 8001
+.\.venv\Scripts\python.exe -m uvicorn rutas.api:app --host 127.0.0.1 --port 8001
 ```
 
 Abrir http://127.0.0.1:8001/docs para enviar el escenario a `POST /predict`.
@@ -59,15 +60,14 @@ ser solicitados; reinicia la API después de reentrenar. La predicción Ridge us
 las variables de entrada y **no** calcula un ETA para la ruta de A*; se informan
 por separado. Al llamar desde la aplicación, la hora, demanda, frecuencia,
 servicio y distancia son valores de escenario sintéticos predefinidos; la UI
-permite elegir hora punta/valle e incidencia. La API no tiene autenticación y
-es solo para uso local: no publicarla directamente en Internet. Nunca cargar
+permite elegir hora punta/valle e incidencia. La demo pública limita las predicciones por IP mediante Vercel. Nunca cargar
 archivos joblib de terceros, pues pueden ejecutar código. `APF3_ARTIFACTS_DIR`
 permite cambiar el directorio de modelos confiables. `.env.example` es
 documentación, no se carga automáticamente.
 
 ## Docker y CI
 
-Desde la raíz, ejecuta `docker build -t metropolitano-apf3 apf3` y `docker run --rm -p 8001:10000 metropolitano-apf3`. La imagen incluye los modelos entrenados. GitHub Actions valida Python, Spring y el cliente Expo antes del despliegue opcional. Consulta la [guía de Vercel](../docs/VERCEL.md).
+Desde esta carpeta, ejecuta `docker build -t metrolimaapp-rutas .` y `docker run --rm -p 8001:10000 metrolimaapp-rutas`. La imagen incluye los modelos entrenados. GitHub Actions valida Python, Spring y el cliente Expo antes del despliegue opcional. Consulta la [guía de Vercel](../docs/VERCEL.md).
 
 ## Accesibilidad
 

@@ -16,7 +16,8 @@ NUMERIC = ["franja_horaria", "es_hora_punta", "distancia_km",
 CATEGORICAL = ["tipo_servicio"]
 FEATURES = NUMERIC + CATEGORICAL
 TARGETS = ["eta_minutos", "saturacion_critica"]
-DATA_PATH = Path(__file__).parent / "data" / "metropolitano_operaciones_2026.csv"
+DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+DATA_PATH = DATA_DIR / "metropolitano_operaciones_2026.csv"
 
 
 def generate_dataset(size: int = 5000) -> pd.DataFrame:

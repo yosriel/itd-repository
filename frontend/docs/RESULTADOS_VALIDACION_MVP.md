@@ -1,6 +1,6 @@
 # Resultados de validación del MVP
 
-> Documento histórico de la entrega anterior. Para reproducir la versión Expo conectada, consulta el [README vigente](../README.md) y la [entrega APF3](APF3_ENTREGA.md).
+> Documento histórico de la entrega anterior. Para reproducir la versión Expo conectada, consulta el [README vigente](../../backend/README.md) y la [entrega APF3](../../backend/docs/APF3_ENTREGA.md).
 
 Fecha: 12/10/2026. Pruebas técnicas realizadas por el agente sobre una demostración académica. No constituyen un estudio con usuarios ni certificación operativa.
 

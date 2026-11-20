@@ -6,12 +6,12 @@ import joblib
 import pytest
 from fastapi.testclient import TestClient
 
-from apf3.api import app, load_models
-from apf3.data_pipeline import (FEATURES, generate_dataset, load_dataset,
-                                split_dataset)
-from apf3.experiment import (classification_metrics, classification_models,
-                             regression_models)
-from apf3.search import BASE_GRAPH, graph_with_incident, heuristic, search
+from rutas.api import app, load_models
+from rutas.data_pipeline import (FEATURES, generate_dataset, load_dataset,
+                                 split_dataset)
+from rutas.experiment import (classification_metrics, classification_models,
+                              regression_models)
+from rutas.search import BASE_GRAPH, graph_with_incident, heuristic, search
 
 
 @pytest.mark.parametrize("algorithm", ["bfs", "dfs", "astar", "hill"])

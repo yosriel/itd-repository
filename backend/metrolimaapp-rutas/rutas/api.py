@@ -11,9 +11,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field
 
-from apf3.data_pipeline import FEATURES
-from apf3.experiment import ARTIFACTS
-from apf3.search import BASE_GRAPH, search
+from rutas.data_pipeline import FEATURES
+from rutas.experiment import ARTIFACTS
+from rutas.search import BASE_GRAPH, search
 
 app = FastAPI(title="MetroLimaApp", version="1.0")
 allowed_origins = [
@@ -54,7 +54,7 @@ def load_models() -> tuple:
     paths = [directory / "ridge.joblib", directory / "xgboost.joblib"]
     if not all(path.is_file() for path in paths):
         raise FileNotFoundError(
-            "Ejecuta python -m apf3.experiment antes de iniciar la API")
+            "Ejecuta python -m rutas.experiment antes de iniciar la API")
     return tuple(joblib.load(path) for path in paths)
 
 

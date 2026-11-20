@@ -19,12 +19,12 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from xgboost import XGBClassifier
 
-from apf3.data_pipeline import (RANDOM_STATE, load_dataset, preprocessor,
-                                split_dataset)
-from apf3.search import compare
+from rutas.data_pipeline import (RANDOM_STATE, load_dataset, preprocessor,
+                                 split_dataset)
+from rutas.search import compare
 
-APF3_DIR = Path(__file__).parent
-ARTIFACTS = APF3_DIR / "artifacts"
+SERVICE_DIR = Path(__file__).resolve().parents[1]
+ARTIFACTS = SERVICE_DIR / "artifacts"
 
 
 def regression_models() -> dict:
@@ -143,7 +143,7 @@ def run_experiment(output: Path = ARTIFACTS) -> dict:
     output.mkdir(parents=True, exist_ok=True)
     joblib.dump(trained["ridge"], output / "ridge.joblib")
     joblib.dump(trained["xgboost"], output / "xgboost.joblib")
-    (APF3_DIR / "resultados.json").write_text(
+    (SERVICE_DIR / "resultados.json").write_text(
         json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8")
     return results
 

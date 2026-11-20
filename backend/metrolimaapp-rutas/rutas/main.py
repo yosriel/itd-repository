@@ -2,7 +2,7 @@
 
 import json
 
-from apf3.api import PredictionRequest, predict
+from rutas.api import PredictionRequest, predict
 
 
 def main() -> None:

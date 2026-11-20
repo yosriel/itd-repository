@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
-const root = path.resolve(__dirname, '..');
+const root = path.resolve(__dirname, '../..');
 const html = fs.readFileSync(path.join(__dirname, 'reference/metropolitano_perfil.html'), 'utf8');
 const expression = html.match(/const state = ([\s\S]*?);\s*\/\/ ---------------- NAV/)[1];
 const fixtures = vm.runInNewContext(`(${expression})`, {}, { timeout: 1000 });

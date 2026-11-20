@@ -12,4 +12,4 @@ npm run web
 npm run build:web
 ```
 
-El APK se genera en `artifacts/metropolitano.apk`. El registro, la presentación, las rutas y las recargas requieren las APIs activas. La [guía del proyecto](../../../README.md) incluye la configuración de los servidores, el acceso por USB, las variables para Vercel y los comandos de verificación desde una copia limpia.
+El APK se genera en `artifacts/metropolitano.apk`. El registro, la presentación, las rutas y las recargas requieren las APIs activas. La [guía del proyecto](../../../backend/README.md) incluye la configuración de los servidores, el acceso por USB, las variables para Vercel y los comandos de verificación desde una copia limpia.

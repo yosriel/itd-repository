@@ -58,11 +58,11 @@ memoria configurada aquí, las cuentas se borran al reiniciar o suspender Spring
 La base H2 en memoria se reinicia cuando el servicio se reinicia o duerme; no
 uses esta configuración para guardar datos que deban conservarse.
 
-### API APF3
+### API de rutas
 
 - Tipo: **Web Service**, runtime **Docker**, plan **Free**.
-- Root Directory: la raíz del repositorio (dejar vacío).
-- Dockerfile Path: `./apf3/Dockerfile`
+- Root Directory: `backend/metrolimaapp-rutas`.
+- Dockerfile Path: `./Dockerfile`
 - Health Check Path: `/health`
 - Variable:
   - `CORS_ALLOWED_ORIGINS` = el mismo origen exacto del Static Site.

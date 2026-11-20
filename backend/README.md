@@ -9,7 +9,7 @@ Aplicación académica de Android desarrollada con Expo y React Native, con una 
 | Android | Expo SDK 58, React Native 0.88.1, React 19.3, teléfono arm64 para el APK local predeterminado |
 | Desarrollo JS | Node 24.3+ de la rama 24 o Node 26, npm y package-lock.json |
 | Spring | JDK 21, Spring Boot 4.1.3, Maven Wrapper 3.9.16 |
-| Modelos | Python 3.13, dependencias fijadas en apf3/requirements.txt |
+| Modelos | Python 3.13, dependencias fijadas en backend/metrolimaapp-rutas/requirements.txt |
 | Compilación Android | JDK 21, Android SDK, NDK y CMake. Expo genera Gradle y el proyecto Android. |
 | Datos | H2 para la prueba local, PostgreSQL de Neon para las réplicas en Vercel |
 
@@ -20,13 +20,11 @@ Desde la raíz del repositorio, configura `JAVA_HOME` con un JDK 21 y ejecuta en
 ```bash
 export PATH="$JAVA_HOME/bin:$PATH"
 (cd backend/metropolitano-backend-api && ./mvnw package)
-python3.13 -m venv .venv
-.venv/bin/python -m pip install -r apf3/requirements.txt
-.venv/bin/python -m apf3.experiment
-./scripts/servir-local.sh
+(cd backend/metrolimaapp-rutas && python3.13 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt && .venv/bin/python -m rutas.experiment)
+./backend/scripts/servir-local.sh
 ```
 
-El entrenamiento genera modelos confiables en `apf3/artifacts/` y actualiza el informe de métricas. Spring escucha en el puerto 8080 y la API de rutas en el 8001. Comprueba `/actuator/health` y `/health`, respectivamente. El perfil local usa H2 en la carpeta `data/` del backend. `GEMINI_API_KEY` es opcional para las demás funciones y se configura exclusivamente en Spring si se desea utilizar el asistente. Las contraseñas de las cuentas académicas se guardan con BCrypt.
+El entrenamiento genera modelos confiables en `backend/metrolimaapp-rutas/artifacts/` y actualiza el informe de métricas. Spring escucha en el puerto 8080 y la API de rutas en el 8001. Comprueba `/actuator/health` y `/health`, respectivamente. El perfil local usa H2 en la carpeta `data/` del backend. `GEMINI_API_KEY` es opcional para las demás funciones y se configura exclusivamente en Spring si se desea utilizar el asistente. Las contraseñas de las cuentas académicas se guardan con BCrypt.
 
 ## Abrir en Android con Expo
 
@@ -54,7 +52,7 @@ adb install -r artifacts/metropolitano.apk
 
 El APK local incluye JavaScript, recursos y fuentes. Funciona sin Metro. El artefacto de demostración usa la firma de desarrollo y la ABI arm64-v8a. Para otro conjunto de ABI define `ANDROID_ABIS` antes de compilar. El plugin de red permite HTTP únicamente a localhost para las dos APIs mediante USB. Repite los reenvíos ADB tras reconectar el teléfono.
 
-Para usar el teléfono sin el cable, compila con `EXPO_PUBLIC_API_URL=https://<spring>/api/v1/demo` y `EXPO_PUBLIC_AI_URL=https://<apf3>` en el entorno o en `.env.local` de la carpeta móvil. Usa los dominios que te asigne Vercel. Estas variables son públicas. Con una cuenta Expo, `eas build -p android --profile preview` genera un APK de distribución interna. Configura las dos URLs en el entorno EAS `preview` antes de construir.
+Para usar el teléfono sin el cable, compila con `EXPO_PUBLIC_API_URL=https://<spring>/api/v1/demo` y `EXPO_PUBLIC_AI_URL=https://<api-de-rutas>` en el entorno o en `.env.local` de la carpeta móvil. Usa los dominios que te asigne Vercel. Estas variables son públicas. Con una cuenta Expo, `eas build -p android --profile preview` genera un APK de distribución interna. Configura las dos URLs en el entorno EAS `preview` antes de construir.
 
 ## Web y despliegue
 
@@ -74,10 +72,10 @@ Desde la carpeta móvil, `npm run web` abre el sitio en `http://localhost:5173` 
 
 ```bash
 (cd backend/metropolitano-backend-api && ./mvnw verify)
-.venv/bin/python -m flake8 apf3 --max-line-length=88
-.venv/bin/python -m pytest apf3/tests -q
+(cd backend/metrolimaapp-rutas && .venv/bin/python -m flake8 rutas tests --max-line-length=88)
+(cd backend/metrolimaapp-rutas && .venv/bin/python -m pytest tests -q)
 (cd frontend/metropolitano-mobile-app/MetropolitanoMobileApp && npx expo install --check && npx tsc --noEmit && npx tsc -p web --noEmit && npm run lint && npm test -- --runInBand && npm run build:web)
-.venv/bin/python performance/run.py --minutos 15
+backend/metrolimaapp-rutas/.venv/bin/python backend/performance/run.py --minutos 15
 ```
 
-La guía de [sustentación de la rúbrica](docs/APF3_ENTREGA.md) reúne los cinco criterios. Las [mediciones de rendimiento](performance/resultados.json) se obtienen contra procesos locales y una base desechable. Las capturas de octubre en `docs/evidence/` corresponden a una versión anterior.
+La guía de [sustentación de la rúbrica](docs/APF3_ENTREGA.md) reúne los cinco criterios. Las [mediciones de rendimiento](performance/resultados.json) se obtienen contra procesos locales y una base desechable. Las capturas de octubre en [las evidencias del frontend](../frontend/docs/evidence/) corresponden a una versión anterior.

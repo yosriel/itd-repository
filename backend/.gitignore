@@ -1,0 +1,8 @@
+docs/*.log
+.env
+*.local
+.vercel/
+metrolimaapp-rutas/artifacts/
+__pycache__/
+.pytest_cache/
+.venv/
