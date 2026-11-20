@@ -2,8 +2,7 @@
 
 Este módulo Python es un microservicio experimental separado del backend
 Java/Spring. El planeador web/móvil lo consulta al elegir una ruta en sesión
-conectada; el Vite proxy y el reenvío USB usan el puerto 8001. Las pantallas
-offline conservan su cálculo local. No alimenta las alertas ni las transacciones.
+conectada; el Vite proxy y el reenvío USB usan el puerto 8001. Toda búsqueda del planeador usa la API. No alimenta las alertas ni las transacciones.
 Gemini es otra función y no sustituye estos experimentos.
 Todo el corredor, los tiempos y el dataset son **sintéticos**; no hay conexión
 con ATU, GPS, pagos ni datos reales. No usar para decisiones operativas.
@@ -54,8 +53,7 @@ Después de entrenar, en otra terminal desde la raíz:
 Abrir http://127.0.0.1:8001/docs para enviar el escenario a `POST /predict`.
 Para integrar la ruta al planeador, deja este servicio activo y ejecuta el
 frontend web con `npm run web`; Vite reenvía `/ai` a este puerto. En Android
-por USB, `npm run android:usb` configura el reenvío del puerto 8001 junto al
-de Spring.
+por USB, usa `adb reverse tcp:8001 tcp:8001` junto al reenvío del puerto 8080 de Spring.
 `GET /health` responde 503 si faltan modelos. Los modelos se cargan una vez al
 ser solicitados; reinicia la API después de reentrenar. La predicción Ridge usa
 las variables de entrada y **no** calcula un ETA para la ruta de A*; se informan
@@ -69,30 +67,7 @@ documentación, no se carga automáticamente.
 
 ## Docker y CI
 
-El workflow ejecuta flake8, pytest y construye una imagen que entrena modelos
-sintéticos durante el build en pushes/PR hacia `main` o `develop`. El despliegue
-a un servicio ECS **existente** es opcional: solo se intenta al hacer push a
-`main` si `ENABLE_ECS_DEPLOY=true`, y requiere configurar `AWS_ROLE_ARN` como
-secreto OIDC y las variables `AWS_REGION`, `ECR_REPOSITORY`, `ECS_CLUSTER` y
-`ECS_SERVICE`, además de crear antes ECR, clúster/servicio y permisos IAM. No se
-crean recursos ni se generan cargos por AWS hasta configurar y habilitar esta
-opción. La imagen se construye con el dataset sintético y modelos entrenados
-en build; si se vuelve a entrenar en producción se necesita un proceso de
-promoción validado. La definición de tarea ECS existente debe usar la imagen
-del repositorio `latest`, escuchar el puerto 8000 y permitir el health check
-`/health` desde el balanceador privado. Para probar Docker, instala primero
-Docker y, desde la raíz:
-
-```powershell
-docker build -f apf3\Dockerfile -t metropolitano-apf3 .
-docker run --rm -p 127.0.0.1:8001:8000 metropolitano-apf3
-```
-
-El entrenamiento se ejecuta durante el build. Para ejecución local sin Docker,
-el entrenamiento sí debe haberse ejecutado en el host primero. No se crearon
-recursos AWS ni se validó despliegue en una cuenta. Para producción se requiere
-red privada y autenticación entre servicios, HTTPS, monitoreo, pruebas de carga
-y una estrategia de promoción/rollback. No guardar claves en el repositorio.
+Desde la raíz, ejecuta `docker build -t metropolitano-apf3 apf3` y `docker run --rm -p 8001:10000 metropolitano-apf3`. La imagen incluye los modelos entrenados. GitHub Actions valida Python, Spring y el cliente Expo antes del despliegue opcional. Consulta la [guía de Vercel](../docs/VERCEL.md).
 
 ## Accesibilidad
 

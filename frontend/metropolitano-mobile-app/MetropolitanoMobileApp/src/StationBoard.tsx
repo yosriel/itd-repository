@@ -3,7 +3,9 @@ import { Modal, ScrollView, Text, View } from 'react-native';
 import { demoArrivals } from './demoTransit';
 import { Button, Card, Heading, Sub } from './ui';
 
-export function StationBoard({ station, close }: { station: string | null; close: () => void }) {
+import type { Catalog } from './domain';
+
+export function StationBoard({ station, close, routes }: { routes: Catalog['rutas']; station: string | null; close: () => void }) {
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
     setElapsed(0);
@@ -11,7 +13,7 @@ export function StationBoard({ station, close }: { station: string | null; close
     const timer = setInterval(() => setElapsed(value => value + 1), 1000);
     return () => clearInterval(timer);
   }, [station]);
-  const arrivals = station ? demoArrivals(station) : [];
+  const arrivals = station ? demoArrivals(station, routes) : [];
   return <Modal visible={!!station} transparent animationType="slide" onRequestClose={close}>
     <View className="flex-1 justify-center bg-black/50 px-5">
       <View className="max-h-[80%] w-full max-w-[440px] self-center rounded-3xl bg-white p-5 gap-4">

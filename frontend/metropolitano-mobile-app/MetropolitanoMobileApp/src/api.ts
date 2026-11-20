@@ -1,14 +1,5 @@
-// USB device (or emulator with adb reverse tcp:8080 tcp:8080).
-declare const __METROPOLITANO_API_URL__: string;
-declare const __METROPOLITANO_AI_URL__: string;
-
-const isBrowser = Boolean((globalThis as { document?: unknown }).document);
-export const API_URL = isBrowser
-  ? __METROPOLITANO_API_URL__
-  : 'http://localhost:8080/api/v1/demo';
-export const AI_API_URL = isBrowser
-  ? __METROPOLITANO_AI_URL__
-  : 'http://localhost:8001';
+import { API_URL, AI_API_URL } from './endpoints';
+export { API_URL, AI_API_URL };
 export async function request<T>(
   path: string,
   token?: string,

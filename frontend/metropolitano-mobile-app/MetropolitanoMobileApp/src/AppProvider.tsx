@@ -16,11 +16,11 @@ import { request } from './api';
 
 type AppContextValue = {
   state: AppState;
-  mode: 'connected' | 'offline' | null;
+  mode: 'connected' | null;
   busy: boolean;
   toast: string;
   notify: (text: string) => void;
-  login: (phone: string, credential: string, offline?: boolean) => Promise<void>;
+  login: (phone: string, credential: string) => Promise<void>;
   loginPresentation: () => Promise<void>;
   register: (input: {
     fullName: string;
@@ -75,25 +75,20 @@ export function AppProvider({ children }: React.PropsWithChildren) {
       setState(data);
     }
   }
+  async function openSession(sessionToken: string) {
+    const data = await request<AppState>('/state', sessionToken);
+    token.current = sessionToken;
+    setState(data);
+    setMode('connected');
+  }
   const value: AppContextValue = {
     state,
     mode,
     busy,
     toast,
     notify: setToast,
-    login: (phone, credential, offline = false) =>
+    login: (phone, credential) =>
       operation(async () => {
-        if (offline) {
-          if (!/^9\d{8}$/.test(phone) || !/^\d{8}$/.test(credential)) {
-            throw new Error('Ingresa celular de 9 dígitos y DNI de 8 dígitos');
-          }
-          setState({
-            ...initialState(),
-            profile: { ...initialState().profile, phone, dni: credential },
-          });
-          setMode('offline');
-          return;
-        }
         if (!/^9\d{8}$/.test(phone) || !credential) {
           throw new Error('Ingresa un celular y contraseña válidos');
         }
@@ -103,9 +98,7 @@ export function AppProvider({ children }: React.PropsWithChildren) {
           'POST',
           { phone, password: credential },
         );
-        token.current = session.token;
-        await refresh();
-        setMode('connected');
+        await openSession(session.token);
       }),
     loginPresentation: () =>
       operation(async () => {
@@ -114,9 +107,7 @@ export function AppProvider({ children }: React.PropsWithChildren) {
           undefined,
           'POST',
         );
-        token.current = session.token;
-        await refresh();
-        setMode('connected');
+        await openSession(session.token);
       }),
     register: input =>
       operation(async () => {
@@ -129,9 +120,7 @@ export function AppProvider({ children }: React.PropsWithChildren) {
           'POST',
           input,
         );
-        token.current = session.token;
-        await refresh();
-        setMode('connected');
+        await openSession(session.token);
       }),
     logout: () =>
       operation(async () => {
@@ -152,23 +141,16 @@ export function AppProvider({ children }: React.PropsWithChildren) {
         if (error) {
           throw new Error(error);
         }
-        const saved =
-          mode === 'connected'
-            ? await request<Profile>('/me', token.current, 'PATCH', profile)
-            : { ...profile, version: profile.version + 1 };
+        const saved = await request<Profile>('/me', token.current, 'PATCH', profile);
         setState(current => ({ ...current, profile: saved }));
         setToast('Perfil actualizado');
       }),
     setNotifications: enabled =>
       operation(async () => {
-        if (mode === 'connected') {
-          await request('/preferences', token.current, 'PATCH', {
-            notifications: enabled,
-          });
-          await refresh();
-        } else {
-          setState(current => ({ ...current, notifications: enabled }));
-        }
+        await request('/preferences', token.current, 'PATCH', {
+          notifications: enabled,
+        });
+        await refresh();
       }),
     readAlerts: async () => {
       if (state.alertsRead || alertsLock.current) {
@@ -176,12 +158,8 @@ export function AppProvider({ children }: React.PropsWithChildren) {
       }
       alertsLock.current = true;
       try {
-        if (mode === 'connected') {
-          await request('/alerts/read-all', token.current, 'POST');
-          await refresh();
-        } else {
-          setState(current => ({ ...current, alertsRead: true }));
-        }
+        await request('/alerts/read-all', token.current, 'POST');
+        await refresh();
       } finally {
         alertsLock.current = false;
       }
@@ -200,41 +178,14 @@ export function AppProvider({ children }: React.PropsWithChildren) {
         if (![5, 10, 20, 50].includes(amount)) {
           throw new Error('Selecciona un monto válido');
         }
-        if (mode === 'connected') {
-          await request<Recharge>(
-            '/recharges',
-            token.current,
-            'POST',
-            { amount: amount.toFixed(2), method },
-            key,
-          );
-          await refresh();
-        } else {
-          setState(current => {
-            if (current.recharges.some(item => item.id === key)) {
-              return current;
-            }
-            const balanceAfter = (
-              (Math.round(Number(current.balance) * 100) + amount * 100) /
-              100
-            ).toFixed(2);
-            return {
-              ...current,
-              balance: balanceAfter,
-              recharges: [
-                {
-                  id: key,
-                  amount: amount.toFixed(2),
-                  method,
-                  balanceAfter,
-                  createdAt: new Date().toISOString(),
-                  dataMode: 'SIMULATED',
-                },
-                ...current.recharges,
-              ],
-            };
-          });
-        }
+        await request<Recharge>(
+          '/recharges',
+          token.current,
+          'POST',
+          { amount: amount.toFixed(2), method },
+          key,
+        );
+        await refresh();
         setToast(
           'Recarga ficticia registrada. No acredita una tarjeta física.',
         );

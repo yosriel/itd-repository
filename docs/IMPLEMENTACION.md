@@ -1,5 +1,7 @@
 # Estado de la primera implementación
 
+> Documento histórico de la entrega anterior. Para reproducir la versión Expo conectada, consulta el [README vigente](../README.md) y la [entrega APF3](APF3_ENTREGA.md).
+
 Fecha: 12 de octubre de 2026. Base: HTML final con SHA-256 `734BCBFA25EC1F318DB668188AE22BE6319240750AC5F63D36CD6D7A700B6F27`.
 
 ## Implementado

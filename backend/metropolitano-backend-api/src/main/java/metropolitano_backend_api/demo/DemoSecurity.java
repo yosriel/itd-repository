@@ -32,7 +32,7 @@ public class DemoSecurity {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         String configuredOrigins = System.getenv().getOrDefault(
-            "CORS_ALLOWED_ORIGINS", "http://localhost:5173");
+            "CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173");
         List<String> origins = Arrays.stream(configuredOrigins.split(","))
             .map(String::trim)
             .filter(origin -> !origin.isEmpty())

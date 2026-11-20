@@ -6,3 +6,5 @@ apf3/artifacts/
 apf3/__pycache__/
 apf3/**/__pycache__/
 .pytest_cache/
+/.venv/
+.vercel/

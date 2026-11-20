@@ -15,7 +15,6 @@ import {
   useNavigation,
 } from '@react-navigation/native';
 import { useApp } from '../AppProvider';
-import { fixtures } from '../domain';
 import { StationBoard } from '../StationBoard';
 import { TabParams } from '../navigationTypes';
 import {
@@ -37,7 +36,7 @@ export function Home() {
   const [gpsPrompt, setGpsPrompt] = useState(true);
   const [gpsDemo, setGpsDemo] = useState(false);
   const [stationBoard, setStationBoard] = useState<string | null>(null);
-  const stations = fixtures.stations.filter(station =>
+  const stations = state.fixtures.stations.filter(station =>
     station.name.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
   );
   return (
@@ -123,7 +122,7 @@ export function Home() {
           </View>
         ))}
       </ScrollView>
-      <StationBoard station={stationBoard} close={() => setStationBoard(null)} />
+      <StationBoard routes={state.fixtures.rutas} station={stationBoard} close={() => setStationBoard(null)} />
       <Modal
         visible={gpsPrompt}
         transparent
@@ -185,7 +184,7 @@ export function Alerts() {
           />
         </View>
       </Card>
-      {fixtures.alerts.map(alert => {
+      {state.fixtures.alerts.map(alert => {
         const Icon =
           alert.level === 'red'
             ? TriangleAlert

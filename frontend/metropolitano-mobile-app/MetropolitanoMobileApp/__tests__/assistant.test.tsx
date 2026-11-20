@@ -18,7 +18,6 @@ test('assistant validates messages, requires a connected session and shows repli
   let tree!: Renderer.ReactTestRenderer;
   const fetchMock = jest.spyOn(globalThis, 'fetch');
   await act(async () => { tree = Renderer.create(<AppProvider><Capture /></AppProvider>); });
-  await act(async () => { await app.login('987654321', '76543210', true); });
   await act(async () => { await assistant.send(); });
   expect(assistant.error).toContain('Escribe una pregunta');
   await act(async () => { assistant.setMessage('Hola'); });

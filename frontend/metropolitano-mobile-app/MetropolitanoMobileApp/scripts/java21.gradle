@@ -1,0 +1,15 @@
+// Los plugins JVM incluidos por React Native solicitan un compilador 17.
+// Usar el JDK 21 conservando el bytecode declarado por cada plugin.
+gradle.beforeProject { project ->
+    project.afterEvaluate {
+        def java = project.extensions.findByType(JavaPluginExtension)
+        if (java != null && project.extensions.findByName('android') == null &&
+            java.toolchain.languageVersion.present) {
+            def source = java.sourceCompatibility
+            def target = java.targetCompatibility
+            java.toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+            java.sourceCompatibility = source
+            java.targetCompatibility = target
+        }
+    }
+}

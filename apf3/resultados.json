@@ -18,7 +18,7 @@
       ],
       "nodes_explored": 8,
       "cost_minutes": 28.0,
-      "elapsed_ms": 0.1100999943446368
+      "elapsed_ms": 0.009332000445283484
     },
     {
       "algorithm": "dfs",
@@ -32,7 +32,7 @@
       ],
       "nodes_explored": 6,
       "cost_minutes": 31.0,
-      "elapsed_ms": 0.06709998706355691
+      "elapsed_ms": 0.005029999556427356
     },
     {
       "algorithm": "astar",
@@ -45,7 +45,7 @@
       ],
       "nodes_explored": 6,
       "cost_minutes": 19.0,
-      "elapsed_ms": 0.08249998791143298
+      "elapsed_ms": 0.005859999873791821
     },
     {
       "algorithm": "hill",
@@ -58,13 +58,13 @@
       ],
       "nodes_explored": 5,
       "cost_minutes": 28.0,
-      "elapsed_ms": 0.10449998080730438
+      "elapsed_ms": 0.006243000825634226
     }
   ],
   "regresion": {
     "lineal": {
       "r2": 0.9565057748213944,
-      "rmse": 1.978289172512757,
+      "rmse": 1.9782891725127567,
       "mae": 1.5828024088685055,
       "parametros": {
         "model__fit_intercept": true
@@ -72,8 +72,8 @@
     },
     "polinomica": {
       "r2": 0.9562778542893888,
-      "rmse": 1.9834657627845367,
-      "mae": 1.583595231991629,
+      "rmse": 1.9834657627845371,
+      "mae": 1.58359523199163,
       "parametros": {
         "poly__degree": 2
       }
@@ -89,7 +89,7 @@
     },
     "ridge": {
       "r2": 0.9563017434916479,
-      "rmse": 1.982923819014423,
+      "rmse": 1.9829238190144227,
       "mae": 1.5829011298855262,
       "parametros": {
         "model__alpha": 10.0,
@@ -114,7 +114,7 @@
           312
         ]
       ],
-      "inference_ms_batch": 62.74399999529123,
+      "inference_ms_batch": 3.5281039999972563,
       "parametros": {
         "C": 1.0,
         "class_weight": "balanced"
@@ -136,7 +136,7 @@
           295
         ]
       ],
-      "inference_ms_batch": 986.822500010021,
+      "inference_ms_batch": 36.441201000343426,
       "parametros": {
         "C": 1.0,
         "kernel": "rbf",
@@ -159,7 +159,7 @@
           288
         ]
       ],
-      "inference_ms_batch": 182.1038999769371,
+      "inference_ms_batch": 15.06713100025081,
       "parametros": {
         "n_neighbors": 7,
         "weights": "distance"
@@ -181,7 +181,7 @@
           297
         ]
       ],
-      "inference_ms_batch": 37.86509999190457,
+      "inference_ms_batch": 3.8263540000116336,
       "parametros": {
         "criterion": "gini",
         "max_depth": 6,
@@ -205,7 +205,7 @@
           294
         ]
       ],
-      "inference_ms_batch": 96.86009999131784,
+      "inference_ms_batch": 5.950431000201206,
       "parametros": {
         "criterion": "friedman_mse",
         "max_depth": 3,
@@ -216,22 +216,22 @@
       }
     },
     "xgboost": {
-      "accuracy": 0.881,
-      "precision": 0.8546511627906976,
-      "recall": 0.8099173553719008,
-      "f1": 0.8316831683168316,
-      "auc_roc": 0.9447846525768604,
+      "accuracy": 0.872,
+      "precision": 0.8425655976676385,
+      "recall": 0.7961432506887053,
+      "f1": 0.8186968838526912,
+      "auc_roc": 0.9440559440559441,
       "confusion_matrix": [
         [
-          587,
-          50
+          583,
+          54
         ],
         [
-          69,
-          294
+          74,
+          289
         ]
       ],
-      "inference_ms_batch": 44.06449999078177,
+      "inference_ms_batch": 5.093472000226029,
       "parametros": {
         "max_depth": 3,
         "n_estimators": 100,
@@ -242,13 +242,13 @@
     }
   },
   "importancia_xgboost": {
-    "numeric__franja_horaria": 0.022434759885072708,
-    "numeric__es_hora_punta": 0.37839484214782715,
-    "numeric__distancia_km": 0.019606823101639748,
-    "numeric__afluencia_anden": 0.39108729362487793,
-    "numeric__frecuencia_buses_min": 0.07912933826446533,
-    "numeric__incidencia_caqueta": 0.08572720736265182,
-    "categorical__tipo_servicio_Expreso": 0.02361970953643322,
+    "numeric__franja_horaria": 0.022512592375278473,
+    "numeric__es_hora_punta": 0.4364047348499298,
+    "numeric__distancia_km": 0.018346233293414116,
+    "numeric__afluencia_anden": 0.3403205871582031,
+    "numeric__frecuencia_buses_min": 0.07321521639823914,
+    "numeric__incidencia_caqueta": 0.08817555010318756,
+    "categorical__tipo_servicio_Expreso": 0.02102501504123211,
     "categorical__tipo_servicio_Regular": 0.0
   }
 }

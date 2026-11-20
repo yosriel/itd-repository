@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import qrcode from 'qrcode-generator';
 import Svg, { Rect } from 'react-native-svg';
-import LinearGradient from 'react-native-linear-gradient';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DemoCard } from '../DemoCard';
 import {
@@ -35,7 +35,6 @@ import {
 } from '@react-navigation/native';
 import { useApp } from '../AppProvider';
 import {
-  fixtures,
   initials,
   money,
   Profile as UserProfile,
@@ -125,7 +124,7 @@ export function Account({
           </View>
         </Card>
       ))}
-      {fixtures.historial.map((item, index) => (
+      {state.fixtures.historial.map((item, index) => (
         <Card key={index}>
           <View className="flex-row justify-between gap-2">
             <View className="flex-1">
@@ -687,11 +686,11 @@ export function Settings({
     },
     privacy: {
       title: 'Privacidad',
-      text: 'Utiliza los datos asignados para la presentación. La cuenta conectada guarda perfil, saldo de prueba y preferencias en la base local del backend. El modo sin conexión se borra al cerrar sesión. Esta versión no solicita GPS ni envía notificaciones push. No contiene una integración oficial con ATU.',
+      text: 'Utiliza los datos asignados para la presentación. La cuenta conectada guarda perfil, saldo de prueba y preferencias en la base de datos del servidor. Esta versión no solicita GPS ni envía notificaciones push. No contiene una integración oficial con ATU.',
     },
     help: {
       title: 'Ayuda y soporte',
-      text: '¿La recarga cobra dinero? No, solo suma saldo de prueba.\n\n¿Los buses están en vivo? No, los estados y tiempos son referenciales.\n\n¿Dónde se guarda mi perfil? En el backend al ingresar conectado; sin conexión solo durante la sesión.\n\n¿Puedo consultar una tarjeta física? No.\n\nEsta versión no tiene canal de atención ni tickets de soporte.',
+      text: '¿La recarga cobra dinero? No, solo suma saldo de prueba.\n\n¿Los buses están en vivo? No, los estados y tiempos son referenciales.\n\n¿Dónde se guarda mi perfil? En la base de datos del servidor.\n\n¿Puedo consultar una tarjeta física? No.\n\nEsta versión no tiene canal de atención ni tickets de soporte.',
     },
   }[route.params.section];
   return (
