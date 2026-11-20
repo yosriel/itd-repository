@@ -1,4 +1,4 @@
-# APF3: experimentos reproducibles
+# MetroLimaApp · Experimentos de rutas
 
 Este módulo Python es un microservicio experimental separado del backend
 Java/Spring. El planeador web/móvil lo consulta al elegir una ruta en sesión

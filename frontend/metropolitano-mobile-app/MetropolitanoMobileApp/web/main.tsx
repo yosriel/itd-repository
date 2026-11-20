@@ -147,11 +147,11 @@ function WebApp() {
             />
             <div className="fade" />
             <div className="splash-content">
-              <img className="mark" src={logo} alt="Logotipo de Metropolitano Lima App" />
+              <img className="mark" src={logo} alt="Logotipo de Metropolitano de Lima App" />
               <h1>
                 Metropolitano
                 <br />
-                Lima App
+                de Lima App
               </h1>
               <p>Tu ruta, en un solo lugar.</p>
               {button('Pulsa para continuar', () => setSplash(false))}

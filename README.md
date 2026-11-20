@@ -1,6 +1,6 @@
-# Metropolitano Lima · APF3
+# Metropolitano de Lima App
 
-Aplicación académica de Android desarrollada con Expo y React Native, con una vista web complementaria. Para entrar se requiere una sesión de Spring. Ambas interfaces leen el catálogo, el perfil, los movimientos y las alertas desde la API. El planeador consulta A*, Ridge y XGBoost en APF3. Los datos de transporte, el QR, los andenes y las recargas son simulados. La aplicación no realiza pagos ni consulta servicios de ATU.
+Aplicación académica de Android desarrollada con Expo y React Native, con una vista web complementaria. Para entrar se requiere una sesión de Spring. Ambas interfaces leen el catálogo, el perfil, los movimientos y las alertas desde la API. El planeador consulta A*, Ridge y XGBoost en la API de rutas. Los datos de transporte, el QR, los andenes y las recargas son simulados. La aplicación no realiza pagos ni consulta servicios de ATU.
 
 ## Requisitos
 
@@ -11,7 +11,7 @@ Aplicación académica de Android desarrollada con Expo y React Native, con una 
 | Spring | JDK 21, Spring Boot 4.1.3, Maven Wrapper 3.9.16 |
 | Modelos | Python 3.13, dependencias fijadas en apf3/requirements.txt |
 | Compilación Android | JDK 21, Android SDK, NDK y CMake. Expo genera Gradle y el proyecto Android. |
-| Datos | H2 para la prueba local; MySQL persistente y compartido para las réplicas en Vercel |
+| Datos | H2 para la prueba local, PostgreSQL de Neon para las réplicas en Vercel |
 
 ## Arrancar ambas APIs
 
@@ -26,7 +26,7 @@ python3.13 -m venv .venv
 ./scripts/servir-local.sh
 ```
 
-El entrenamiento genera modelos confiables en `apf3/artifacts/` y actualiza el informe de métricas. Spring escucha en el puerto 8080 y APF3 en el 8001. Comprueba `/actuator/health` y `/health`, respectivamente. El perfil local usa H2 en la carpeta `data/` del backend. `GEMINI_API_KEY` es opcional para las demás funciones y se configura exclusivamente en Spring si se desea utilizar el asistente. Las contraseñas de las cuentas académicas se guardan con BCrypt.
+El entrenamiento genera modelos confiables en `apf3/artifacts/` y actualiza el informe de métricas. Spring escucha en el puerto 8080 y la API de rutas en el 8001. Comprueba `/actuator/health` y `/health`, respectivamente. El perfil local usa H2 en la carpeta `data/` del backend. `GEMINI_API_KEY` es opcional para las demás funciones y se configura exclusivamente en Spring si se desea utilizar el asistente. Las contraseñas de las cuentas académicas se guardan con BCrypt.
 
 ## Abrir en Android con Expo
 
@@ -58,7 +58,7 @@ Para usar el teléfono sin el cable, compila con `EXPO_PUBLIC_API_URL=https://<s
 
 ## Web y despliegue
 
-Desde la carpeta móvil, `npm run web` abre el sitio en `http://localhost:5173` y reenvía las llamadas a ambas APIs. `npm run build:web` genera `build/web/`. En Vercel se publican Spring y APF3 como contenedores HTTP. La web opcional usa Vite y el APK se distribuye por separado. La preparación de los proyectos, variables, persistencia y CI/CD está en [la guía de Vercel](docs/VERCEL.md).
+Desde la carpeta móvil, `npm run web` abre el sitio en `http://localhost:5173` y reenvía las llamadas a ambas APIs. `npm run build:web` genera `build/web/`. En Vercel se publican Spring y la API de rutas como contenedores HTTP. La web opcional usa Vite y el APK se distribuye por separado. La preparación de los proyectos, variables, persistencia y CI/CD está en [la guía de Vercel](docs/VERCEL.md).
 
 ## Contratos y pruebas
 
@@ -69,7 +69,7 @@ Desde la carpeta móvil, `npm run web` abre el sitio en `http://localhost:5173` 
 | Leer estado / salir | GET `/api/v1/demo/state`, DELETE `/api/v1/demo/sessions/current` con Bearer |
 | Cuenta y alertas | PATCH `/api/v1/demo/me`, PATCH `/api/v1/demo/preferences`, POST `/api/v1/demo/alerts/read-all` |
 | Recarga de prueba | POST `/api/v1/demo/recharges` con amount, method e Idempotency-Key |
-| Planeador | POST `/predict` en APF3 con origen, destino y escenario. Esquema en `/docs` |
+| Planeador | POST `/predict` en la API de rutas con origen, destino y escenario. Esquema en `/docs` |
 | Asistente | POST `/api/v1/demo/assistant` con Bearer y message. Devuelve 503 sin configuración |
 
 ```bash
