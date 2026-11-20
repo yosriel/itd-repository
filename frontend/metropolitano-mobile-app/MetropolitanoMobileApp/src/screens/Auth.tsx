@@ -64,7 +64,7 @@ export function Auth() {
           <View className="items-center gap-4">
             <Logo size={104} />
             <Text className="text-center font-title text-[27px] text-white">
-              Metropolitano{'\n'}Lima App
+              Metropolitano{'\n'}de Lima App
             </Text>
             <Text className="font-sans text-white">
               Tu ruta, en un solo lugar.

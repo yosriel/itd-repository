@@ -15,7 +15,7 @@ from apf3.data_pipeline import FEATURES
 from apf3.experiment import ARTIFACTS
 from apf3.search import BASE_GRAPH, search
 
-app = FastAPI(title="Metropolitano APF3 - datos sintéticos", version="1.0")
+app = FastAPI(title="MetroLimaApp", version="1.0")
 allowed_origins = [
     origin.strip()
     for origin in os.environ.get(
