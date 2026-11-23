@@ -1,6 +1,6 @@
 # Publicar las APIs del APK y la web en Vercel
 
-El teléfono consulta directamente los dominios HTTPS de Spring y de la API de rutas. Cada servicio puede escalar y volver a arrancar independientemente. Spring guarda cuentas, saldo, recargas y los hashes de sesión en PostgreSQL. La API de rutas empaqueta los modelos entrenados en la imagen para atender predicciones después de cada arranque.
+El teléfono consulta directamente los dominios HTTPS de Spring y de la API de rutas. Cada servicio puede escalar y volver a arrancar independientemente. Spring guarda cuentas, preferencias, saldos, recargas y hashes de sesión en PostgreSQL de Neon. El JAR requiere las variables POSTGRES_DB_URL, POSTGRES_DB_USER y POSTGRES_DB_PASSWORD también al arrancar en desarrollo. La API de rutas empaqueta los modelos entrenados en la imagen para atender predicciones después de cada arranque.
 
 ## Demo Android desplegada
 

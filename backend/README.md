@@ -11,7 +11,7 @@ Aplicación académica de Android desarrollada con Expo y React Native, con una 
 | Spring | JDK 21, Spring Boot 4.1.3, Maven Wrapper 3.9.16 |
 | Modelos | Python 3.13, dependencias fijadas en backend/metrolimaapp-rutas/requirements.txt |
 | Compilación Android | JDK 21, Android SDK, NDK y CMake. Expo genera Gradle y el proyecto Android. |
-| Datos | H2 para la prueba local, PostgreSQL de Neon para las réplicas en Vercel |
+| Datos | PostgreSQL de Neon para desarrollo y Vercel. H2 en memoria solo en pruebas aisladas |
 
 ## Arrancar ambas APIs
 
@@ -19,12 +19,17 @@ Desde la raíz del repositorio, configura `JAVA_HOME` con un JDK 21 y ejecuta en
 
 ```bash
 export PATH="$JAVA_HOME/bin:$PATH"
+# En la primera ejecución copia .env.example a .env en backend/metropolitano-backend-api.
+# Completa .env con la conexión de tu rama Neon de desarrollo.
+set -a
+source backend/metropolitano-backend-api/.env
+set +a
 (cd backend/metropolitano-backend-api && ./mvnw package)
 (cd backend/metrolimaapp-rutas && python3.13 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt && .venv/bin/python -m rutas.experiment)
 ./backend/scripts/servir-local.sh
 ```
 
-El entrenamiento genera modelos confiables en `backend/metrolimaapp-rutas/artifacts/` y actualiza el informe de métricas. Spring escucha en el puerto 8080 y la API de rutas en el 8001. Comprueba `/actuator/health` y `/health`, respectivamente. El perfil local usa H2 en la carpeta `data/` del backend. `GEMINI_API_KEY` es opcional para las demás funciones y se configura exclusivamente en Spring si se desea utilizar el asistente. Las contraseñas de las cuentas académicas se guardan con BCrypt.
+El entrenamiento genera modelos confiables en `backend/metrolimaapp-rutas/artifacts/` y actualiza el informe de métricas. Spring escucha en el puerto 8080 y la API de rutas en el 8001. Comprueba `/actuator/health` y `/health`, respectivamente. La API local también requiere Neon. Prepara el esquema en tu rama de desarrollo con las migraciones y los permisos descritos en [la guía de despliegue](docs/VERCEL.md). `GEMINI_API_KEY` es opcional para las demás funciones y se configura exclusivamente en Spring si se desea utilizar el asistente. Las contraseñas de las cuentas académicas se guardan con BCrypt.
 
 ## Abrir en Android con Expo
 

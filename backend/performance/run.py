@@ -124,9 +124,20 @@ def main():
     env = {'OMP_NUM_THREADS': '1', 'OPENBLAS_NUM_THREADS': '1'}
     java = str(Path(os.environ['JAVA_HOME']) / 'bin/java')
     with tempfile.TemporaryDirectory() as tmp:
-        with service([java, '-jar', str(JAR), '--server.address=127.0.0.1',
+        # El informe mide el mismo JAR con H2 disponible solo en este proceso de prueba.
+        classpath = Path(tmp) / 'h2-classpath'
+        subprocess.run([str(BACK / 'mvnw'), '-q', 'dependency:build-classpath',
+                        '-DincludeArtifactIds=h2', f'-Dmdep.outputFile={classpath}'],
+                       cwd=BACK, check=True)
+        test_url = 'jdbc:h2:mem:perf;DB_CLOSE_DELAY=-1'
+        with service([java, '-Dloader.path=' + classpath.read_text().strip(), '-cp', str(JAR),
+                      'org.springframework.boot.loader.launch.PropertiesLauncher',
+                      '--spring.datasource.url=' + test_url, '--spring.datasource.username=sa',
+                      '--spring.datasource.password=', '--spring.flyway.enabled=true',
+                      '--spring.flyway.url=' + test_url, '--spring.flyway.user=sa',
+                      '--spring.flyway.password=', '--server.address=127.0.0.1',
                       '--server.port={port}', '--spring.profiles.active=demo'],
-                     '/actuator/health', {'DEMO_DB_URL': 'jdbc:h2:mem:perf;DB_CLOSE_DELAY=-1'},
+                     '/actuator/health', {},
                      Path(tmp)/'spring.log') as spring:
             base = spring + '/api/v1/demo'
             token = call(base+'/sessions/presentation', {})['token']
