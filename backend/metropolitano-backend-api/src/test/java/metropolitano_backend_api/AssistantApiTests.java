@@ -15,7 +15,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(properties="spring.datasource.url=jdbc:h2:mem:assistant-test;DB_CLOSE_DELAY=-1")
+@SpringBootTest(properties={"spring.datasource.url=jdbc:h2:mem:assistant-test;DB_CLOSE_DELAY=-1","metrolima.guest-access=true"})
 @AutoConfigureMockMvc
 class AssistantApiTests {
     @Autowired MockMvc mvc;

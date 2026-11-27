@@ -9,21 +9,23 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.config.http.SessionCreationPolicy;
 
 @Configuration
 @Profile("demo")
 public class DemoSecurity {
     @Bean
     PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return new Argon2PasswordEncoder(16, 32, 1, 19 * 1024, 2);
     }
 
     @Bean
     SecurityFilterChain security(HttpSecurity http) throws Exception {
         // Bearer-only demo endpoints authorize in DemoSessions; no cookie authentication.
         return http.cors(Customizer.withDefaults())
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .csrf(csrf -> csrf.ignoringRequestMatchers("/api/v1/demo/**"))
             .authorizeHttpRequests(auth -> auth.requestMatchers("/api/v1/demo/**", "/actuator/health", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .anyRequest().denyAll()).build();

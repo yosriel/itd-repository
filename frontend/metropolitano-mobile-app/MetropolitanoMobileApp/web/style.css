@@ -84,6 +84,16 @@ textarea {
 .ai-route-incident { display: flex; align-items: center; gap: 8px; min-height: 44px; }
 .ai-route-incident input { width: 20px; min-height: 20px; }
 .assistant-result p { margin: 12px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.assistant-reply {
+  margin: 12px 0;
+  padding: 14px;
+  background: #f0f5f8;
+  border: 1px solid #c8d6df;
+  border-radius: 12px;
+  font-size: 16px;
+  line-height: 1.6;
+}
+.assistant-reply h3 { margin: 0; font-size: 15px; color: #0b3552; }
 .assistant-error { color: #9f211b; }
 .assistant-float {
   position: absolute;

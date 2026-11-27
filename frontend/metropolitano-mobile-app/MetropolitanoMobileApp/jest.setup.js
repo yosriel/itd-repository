@@ -18,3 +18,7 @@ jest.mock('react-native-svg', () => {
   );
 });
 /* global jest */
+
+jest.mock('expo-notifications', () => ({ setNotificationHandler: jest.fn() }));
+jest.mock('expo-location', () => ({}));
+jest.mock('expo-secure-store', () => ({}));

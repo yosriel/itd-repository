@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.JsonNode;
 import java.util.UUID;
@@ -16,7 +17,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(properties="spring.datasource.url=jdbc:h2:mem:api-test;DB_CLOSE_DELAY=-1")
+@SpringBootTest(properties={"spring.datasource.url=jdbc:h2:mem:api-test;DB_CLOSE_DELAY=-1","metrolima.guest-access=true"})
 @AutoConfigureMockMvc
 class DemoApiTests {
     @Autowired MockMvc mvc;
@@ -43,15 +44,15 @@ class DemoApiTests {
                 "fullName", "Usuario de prueba",
                 "phone", phone,
                 "dni", "76543210",
-                "email", phone + "@example.test",
-                "password", "ClaveAcademica123"))))
+                "email", phone + "@gmail.com",
+                "password", "ClaveSegura#123"))))
             .andExpect(status().isOk()).andReturn();
         return "Bearer " + mapper.readTree(response.getResponse().getContentAsString()).get("token").asText();
     }
     private String login(String phone) throws Exception {
         var response=mvc.perform(post("/api/v1/demo/sessions").contentType("application/json")
             .content(mapper.writeValueAsString(java.util.Map.of(
-                "phone", phone, "password", "ClaveAcademica123"))))
+                "phone", phone, "password", "ClaveSegura#123"))))
             .andExpect(status().isOk()).andReturn();
         return "Bearer " + mapper.readTree(response.getResponse().getContentAsString()).get("token").asText();
     }
@@ -124,12 +125,36 @@ class DemoApiTests {
             .contentType("application/json").content("{\"message\":\"Hola\"}"))
             .andExpect(status().isServiceUnavailable());
     }
+    @Test void registrationValidatesAndNormalizesUserInput() throws Exception {
+        var phone = phone();
+        var input = new java.util.HashMap<>(java.util.Map.of(
+            "firstName", "  Ana  María ", "lastName", "  De  la  Torre ",
+            "phone", " " + phone + " ", "dni", " 00123456 ",
+            "email", " " + phone + "@OUTLOOK.COM ", "password", "ClaveSegura#123"));
+        for (var invalid : java.util.Map.of(
+                "phone", "12345678", "dni", "1234567", "email", "ana@gmail.com.ejemplo.org",
+                "password", "clavesegura123", "lastName", "123").entrySet()) {
+            var changed = new java.util.HashMap<>(input);
+            changed.put(invalid.getKey(), invalid.getValue());
+            mvc.perform(post("/api/v1/demo/register").contentType("application/json")
+                .content(mapper.writeValueAsString(changed))).andExpect(status().isBadRequest());
+        }
+        mvc.perform(post("/api/v1/demo/register").contentType("application/json")
+            .content(mapper.writeValueAsString(input))).andExpect(status().isOk());
+        var account = service.login(phone, "ClaveSegura#123");
+        assertEquals("Ana María De la Torre", account.fullName);
+        assertEquals(phone + "@outlook.com", account.email);
+        assertEquals("00123456", account.dni);
+    }
     @Test void registrationHashesPasswordAndRequiresItForLogin() throws Exception {
         var phone = phone();
         var auth = createAccount(phone);
-        var account = service.login(phone, "ClaveAcademica123");
-        assertNotNull(account.passwordHash);
-        assertNotEquals("ClaveAcademica123", account.passwordHash);
+        var account = service.login(phone, "ClaveSegura#123");
+        assertTrue(account.passwordHash.startsWith("$argon2id$"));
+        assertNotEquals("ClaveSegura#123", account.passwordHash);
+        var secondPhone = phone();
+        createAccount(secondPhone);
+        assertNotEquals(account.passwordHash, storedPassword(secondPhone));
         mvc.perform(post("/api/v1/demo/sessions").contentType("application/json")
             .content(mapper.writeValueAsString(java.util.Map.of(
                 "phone", phone, "password", "ClaveIncorrecta123"))))
@@ -141,8 +166,31 @@ class DemoApiTests {
                 "fullName", "Otra persona",
                 "phone", phone(),
                 "dni", "12345678",
-                "email", phone + "@example.test",
-                "password", "OtraClaveAcademica123"))))
+                "email", phone + "@gmail.com",
+                "password", "OtraClaveSegura#123"))))
             .andExpect(status().isConflict());
+    }
+
+    @Test void validLoginUpgradesLegacyPasswordWithoutChangingTheProfileVersion() throws Exception {
+        var phone = phone();
+        var auth = createAccount(phone);
+        long version = state(auth).get("profile").get("version").asLong();
+        String legacyHash = new BCryptPasswordEncoder().encode("ClaveSegura#123");
+        db.update("UPDATE demo_account SET password_hash=? WHERE login_phone=?", legacyHash, phone);
+
+        mvc.perform(post("/api/v1/demo/sessions").contentType("application/json")
+            .content(mapper.writeValueAsString(java.util.Map.of(
+                "phone", phone, "password", "ClaveIncorrecta#123"))))
+            .andExpect(status().isUnauthorized());
+        assertEquals(legacyHash, storedPassword(phone));
+
+        assertEquals(version, state(login(phone)).get("profile").get("version").asLong());
+        assertTrue(storedPassword(phone).startsWith("$argon2id$"));
+        assertEquals("Usuario de prueba", state(login(phone)).get("profile").get("fullName").asText());
+    }
+
+    private String storedPassword(String phone) {
+        return db.queryForObject("SELECT password_hash FROM demo_account WHERE login_phone=?",
+            String.class, phone);
     }
 }

@@ -2,7 +2,7 @@
 
 El teléfono consulta directamente los dominios HTTPS de Spring y de la API de rutas. Cada servicio puede escalar y volver a arrancar independientemente. Spring guarda cuentas, preferencias, saldos, recargas y hashes de sesión en PostgreSQL de Neon. El JAR requiere las variables POSTGRES_DB_URL, POSTGRES_DB_USER y POSTGRES_DB_PASSWORD también al arrancar en desarrollo. La API de rutas empaqueta los modelos entrenados en la imagen para atender predicciones después de cada arranque.
 
-## Demo Android desplegada
+## Aplicación Android desplegada
 
 Metropolitano de Lima App usa [MetroLimaApp](https://metrolimaapp.vercel.app/health) para las rutas y [MetroLimaApp API](https://metrolimaapp-api.vercel.app/actuator/health) para las cuentas. Spring usa el recurso gratuito `metrolimaapp-db` de Neon en São Paulo. Las reglas de Vercel limitan por IP las operaciones POST de la demo a 30 y las predicciones a 40 por minuto.
 
@@ -14,7 +14,7 @@ EXPO_PUBLIC_AI_URL=https://metrolimaapp.vercel.app \
 ANDROID_ABIS=arm64-v8a,x86_64 npm run apk
 ```
 
-El resultado queda en `artifacts/metropolitano.apk` y usa la firma de desarrollo de la entrega académica.
+El resultado queda en `artifacts/metropolitano.apk` y usa la firma de desarrollo.
 
 ## Crear los servicios
 
@@ -32,7 +32,9 @@ Aplica las migraciones antes de publicar Spring. Inicia el JAR con el perfil `de
 
 Para publicar manualmente desde un checkout limpio, ejecuta `vercel deploy --prod --project metrolimaapp-api --regions gru1` desde la carpeta de Spring. Para la API de rutas, ejecuta `vercel deploy --prod --project metrolimaapp` desde `backend/metrolimaapp-rutas/`. Ambos proyectos usan el preset Container.
 
-Configura `VITE_API_URL` con el dominio HTTPS de Spring seguido de `/api/v1/demo` y `VITE_AI_URL` con el origen HTTPS de la API de rutas. En ambos backends configura `CORS_ALLOWED_ORIGINS` con los orígenes web autorizados, separados por comas. En Expo usa las mismas dos URLs con los nombres `EXPO_PUBLIC_API_URL` y `EXPO_PUBLIC_AI_URL`, y genera el APK después de definirlas. Configura `GEMINI_API_KEY` solo en Spring para usar el asistente. El perfil de presentación es compartido y admite únicamente datos ficticios.
+Configura `VITE_API_URL` con el dominio HTTPS de Spring seguido de `/api/v1/demo` y `VITE_AI_URL` con el origen HTTPS de la API de rutas. En ambos backends configura `CORS_ALLOWED_ORIGINS` con los orígenes web autorizados, separados por comas. En Expo usa las mismas dos URLs con los nombres `EXPO_PUBLIC_API_URL` y `EXPO_PUBLIC_AI_URL`, y genera el APK después de definirlas. Configura `GEMINI_API_KEY` solo en Spring para usar el asistente. El acceso requiere una cuenta y contraseña.
+
+Vite genera la política de seguridad de contenido con los dos orígenes de API configurados, y Vercel añade HSTS al sitio web. Spring usa sesiones Bearer de una hora. Android y web mantienen el token en memoria durante la sesión. Si reviertes un despliegue de Spring después de empezar a guardar contraseñas con Argon2id, usa una compilación que lea ese formato para conservar el acceso de las cuentas nuevas y migradas.
 
 ## Integración y despliegue continuos
 

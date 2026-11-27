@@ -2,22 +2,31 @@
   "expo": {
     "name": "Metropolitano de Lima App",
     "slug": "metropolitano-lima",
-    "version": "1.0.0",
+    "version": "1.3.0",
     "orientation": "portrait",
     "android": {
       "package": "com.metropolitanomobileapp",
-      "versionCode": 1,
+      "versionCode": 7,
       "blockedPermissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.SYSTEM_ALERT_WINDOW"
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.ACCESS_BACKGROUND_LOCATION"
       ]
     },
     "ios": {
       "bundleIdentifier": "com.metropolitanomobileapp"
     },
     "plugins": [
-      "./scripts/android-network.cjs"
+      "./scripts/android-network.cjs",
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Permite usar tu ubicación mientras utilizas la app para guardar tu última posición en este dispositivo."
+        }
+      ],
+      "expo-notifications"
     ]
   }
 }

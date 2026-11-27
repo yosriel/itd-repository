@@ -1,6 +1,6 @@
 # Metropolitano de Lima App
 
-Aplicación académica de Android desarrollada con Expo y React Native, con una vista web complementaria. Para entrar se requiere una sesión de Spring. Ambas interfaces leen el catálogo, el perfil, los movimientos y las alertas desde la API. El planeador consulta A*, Ridge y XGBoost en la API de rutas. Los datos de transporte, el QR, los andenes y las recargas son simulados. La aplicación no realiza pagos ni consulta servicios de ATU.
+Aplicación Android con Expo y React Native y una vista web complementaria. Para entrar se requiere una sesión de Spring. El planificador usa el catálogo de los servicios regulares de la ATU. La simulación separada de tiempos y afluencia usa A*, Ridge y XGBoost. Los horarios en vivo, pagos y recargas de tarjetas físicas están fuera del alcance actual.
 
 ## Requisitos
 
@@ -29,7 +29,7 @@ set +a
 ./backend/scripts/servir-local.sh
 ```
 
-El entrenamiento genera modelos confiables en `backend/metrolimaapp-rutas/artifacts/` y actualiza el informe de métricas. Spring escucha en el puerto 8080 y la API de rutas en el 8001. Comprueba `/actuator/health` y `/health`, respectivamente. La API local también requiere Neon. Prepara el esquema en tu rama de desarrollo con las migraciones y los permisos descritos en [la guía de despliegue](docs/VERCEL.md). `GEMINI_API_KEY` es opcional para las demás funciones y se configura exclusivamente en Spring si se desea utilizar el asistente. Las contraseñas de las cuentas académicas se guardan con BCrypt.
+El entrenamiento genera modelos confiables en `backend/metrolimaapp-rutas/artifacts/` y actualiza el informe de métricas. Spring escucha en el puerto 8080 y la API de rutas en el 8001. Comprueba `/actuator/health` y `/health`, respectivamente. La API local también requiere Neon. Prepara el esquema en tu rama de desarrollo con las migraciones y los permisos descritos en [la guía de despliegue](docs/VERCEL.md). `GEMINI_API_KEY` se configura exclusivamente en Spring y habilita las consultas que requieren Gemini. Las cuentas nuevas usan Argon2id con sal individual y las cuentas con BCrypt actualizan el hash al ingresar correctamente.
 
 ## Abrir en Android con Expo
 
@@ -44,7 +44,7 @@ adb reverse tcp:8081 tcp:8081
 npm start -- --localhost
 ```
 
-Con Expo Go compatible con SDK 58, abre el proyecto Android desde Expo CLI. Para ejecutar una compilación nativa de desarrollo en un dispositivo conectado usa `npm run android`. El modo de presentación también abre una sesión en el servidor. Si una API está caída, la operación muestra el error.
+Con Expo Go compatible con SDK 58, abre el proyecto Android desde Expo CLI. Para ejecutar una compilación nativa de desarrollo en un dispositivo conectado usa `npm run android`. Si una API está caída, la operación muestra el error.
 
 ## Crear e instalar el APK
 
@@ -63,17 +63,54 @@ Para usar el teléfono sin el cable, compila con `EXPO_PUBLIC_API_URL=https://<s
 
 Desde la carpeta móvil, `npm run web` abre el sitio en `http://localhost:5173` y reenvía las llamadas a ambas APIs. `npm run build:web` genera `build/web/`. En Vercel se publican Spring y la API de rutas como contenedores HTTP. La web opcional usa Vite y el APK se distribuye por separado. La preparación de los proyectos, variables, persistencia y CI/CD está en [la guía de Vercel](docs/VERCEL.md).
 
+## Estado de los servicios publicados
+
+```bash
+./backend/scripts/watchdog.sh instalar
+./backend/scripts/watchdog.sh estado
+./backend/scripts/watchdog.sh logs
+```
+
+El temporizador consulta ambas APIs HTTPS cada cinco minutos desde la laptop y reintenta ante fallos transitorios. El sondeo despierta los contenedores de Vercel si están inactivos. El registro queda en el diario de systemd de usuario. El sondeo requiere que la laptop esté encendida, conectada y con la sesión de usuario activa. Usa `detener` para desactivar el temporizador.
+
+El registro valida celular peruano de nueve dígitos, DNI de ocho dígitos y un correo de un proveedor admitido. Los nombres se normalizan sin perder acentos, el correo se convierte a minúsculas y el DNI conserva los ceros iniciales. La contraseña requiere al menos diez caracteres, una mayúscula y uno de los símbolos `@`, `#` o `.`. Los datos de la cuenta y la preferencia de avisos se guardan en Neon. La última posición se guarda en el teléfono.
+
+## Planificador del Metropolitano
+
+Rutas reúne 44 estaciones de los servicios regulares publicados por la ATU. Selecciona una letra para consultar las paradas de ese servicio. Con **Todos**, el planificador devuelve viajes directos si existen y, cuando hace falta cambiar de bus, identifica la estación de transbordo. Las fichas muestran los horarios publicados y el planificador describe el recorrido, sin medir llegadas en tiempo real.
+
+| Servicio | Terminales | Paradas |
+|---|---|---:|
+| [Regular A](https://portal.atu.gob.pe/QR/Metropolitano/Servicios/RegularA.php) | Naranjal ↔ Estación Central por Emancipación | 16 |
+| [Regular B](https://portal.atu.gob.pe/QR/Metropolitano/Servicios/RegularB.php) | Chimpu Ocllo ↔ Estación Central por Alfonso Ugarte | 21 |
+| [Regular C](https://portal.atu.gob.pe/QR/Metropolitano/Servicios/RegularC.php) | Ramón Castilla ↔ Matellini | 24 |
+| [Regular D](https://portal.atu.gob.pe/QR/Metropolitano/Servicios/RegularD.php) | Naranjal ↔ Estación Central por Alfonso Ugarte | 15 |
+
+Las coordenadas de referencia provienen de la [tabla 39 de la UNI](https://repositorio.uni.edu.pe/handle/20.500.14076/22099) y de [© OpenStreetMap contributors](https://www.openstreetmap.org/copyright) para la ampliación norte. Los mapas oficiales se consultaron el 26 de noviembre de 2026. La opción **Simular tiempos y afluencia** conserva el modelo sintético de ocho estaciones y su contrato anterior.
+
+## Consultar destinos en el asistente
+
+Puedes escribir «Quiero irme a Las Malvinas», «¿Cómo llego a Plaza Norte?» o «¿Dónde me bajo para ir al Puente de los Suspiros?». El asistente identifica el destino por sus nombres conocidos y devuelve una estación de referencia. Las consultas del catálogo se responden en Spring sin llamar a un proveedor externo.
+
+El asistente reconoce las estaciones de los cuatro servicios y preguntas como «¿Qué paradas tiene la Ruta A?». Remite a la ficha de la ATU para confirmar los horarios.
+
+- Plaza Norte y Tomás Valle. [Referencia de la ATU](https://www.gob.pe/institucion/atu/noticias/505937-atu-conoce-las-rutas-del-metropolitano-y-corredores-complementarios-que-te-acercan-a-los-vacunatorios-del-minsa-y-essalud)
+- Alameda Las Malvinas y Dos de Mayo como referencia. La alameda ocupa varias cuadras y la estación conveniente depende del punto de llegada. [SERPAR](https://www.serpar.gob.pe/parques-metropolitanos/parque-alameda-las-malvinas/) · [Mapa troncal de ATU publicado por el MEF](https://www.mef.gob.pe/contenidos/inv_privada/app/IMIAPP_ATU_2023.pdf)
+- Parque Kennedy y Ricardo Palma. [Municipalidad de Miraflores](https://www.miraflores.gob.pe/wp-content/uploads/convocatorias/adjudicacion-021-2019/Parque-Kennedy-expediente/Folios-801-a-869.pdf)
+- Puente de los Suspiros, Parque Municipal de Barranco y Bulevar. [PromPerú](https://www.peru.travel/attractions/puente-de-los-suspiros-bridge-of-sighs) · [Municipalidad de Barranco](https://www.gob.pe/institucion/munibarranco/informes-publicaciones/6944780-barran)
+
 ## Contratos y pruebas
 
 | Operación | Ruta y datos |
 |---|---|
-| Crear cuenta | POST `/api/v1/demo/register` con fullName, phone, dni, email y password |
-| Ingresar o presentar | POST `/api/v1/demo/sessions` con phone y password, o POST `/api/v1/demo/sessions/presentation` |
+| Crear cuenta | POST `/api/v1/demo/register` con firstName, lastName, phone, dni, email y password |
+| Ingresar | POST `/api/v1/demo/sessions` con phone y password |
 | Leer estado / salir | GET `/api/v1/demo/state`, DELETE `/api/v1/demo/sessions/current` con Bearer |
 | Cuenta y alertas | PATCH `/api/v1/demo/me`, PATCH `/api/v1/demo/preferences`, POST `/api/v1/demo/alerts/read-all` |
 | Recarga de prueba | POST `/api/v1/demo/recharges` con amount, method e Idempotency-Key |
-| Planeador | POST `/predict` en la API de rutas con origen, destino y escenario. Esquema en `/docs` |
-| Asistente | POST `/api/v1/demo/assistant` con Bearer y message. Devuelve 503 sin configuración |
+| Planificador | GET `/regular/catalog` y POST `/regular/plan` con origin, destination y service opcional. |
+| Simulación | POST `/predict` con origen, destino y escenario. Esquema en `/docs`. |
+| Asistente | POST `/api/v1/demo/assistant` con Bearer y message. Reconoce destinos del catálogo local. Las demás consultas requieren la configuración de Gemini |
 
 ```bash
 (cd backend/metropolitano-backend-api && ./mvnw verify)
@@ -83,4 +120,4 @@ Desde la carpeta móvil, `npm run web` abre el sitio en `http://localhost:5173` 
 backend/metrolimaapp-rutas/.venv/bin/python backend/performance/run.py --minutos 15
 ```
 
-La guía de [sustentación de la rúbrica](docs/APF3_ENTREGA.md) reúne los cinco criterios. Las [mediciones de rendimiento](performance/resultados.json) se obtienen contra procesos locales y una base desechable. Las capturas de octubre en [las evidencias del frontend](../frontend/docs/evidence/) corresponden a una versión anterior.
+La guía de [sustentación de la rúbrica](docs/APF3_ENTREGA.md) reúne los cinco criterios. El [ejecutor de rendimiento](performance/run.py) usa procesos locales y una base desechable. Mide carga, estrés, picos, resistencia, volumen, escalabilidad local, planificación regular e inicio y cierre de sesión. Las [mediciones conservadas](performance/resultados.json) y las [capturas del frontend](../frontend/docs/evidence/) corresponden a versiones anteriores.

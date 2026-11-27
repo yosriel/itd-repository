@@ -23,6 +23,13 @@ BASE_GRAPH: Graph = {
 }
 
 
+# Los tramos de vuelta tienen los mismos tiempos de referencia del corredor.
+ROUTING_GRAPH = {node: edges.copy() for node, edges in BASE_GRAPH.items()}
+for node, edges in BASE_GRAPH.items():
+    for neighbor, minutes in edges.items():
+        ROUTING_GRAPH[neighbor][node] = minutes
+
+
 @dataclass(frozen=True)
 class SearchResult:
     """Resultado comparable; una ruta vacía significa que no se encontró."""
@@ -34,9 +41,9 @@ class SearchResult:
     elapsed_ms: float
 
 
-def graph_with_incident(incident: bool) -> Graph:
+def graph_with_incident(incident: bool, base: Graph = BASE_GRAPH) -> Graph:
     """Añade diez minutos a los tramos que entran a Caquetá."""
-    graph = {node: edges.copy() for node, edges in BASE_GRAPH.items()}
+    graph = {node: edges.copy() for node, edges in base.items()}
     if incident:
         for edges in graph.values():
             if "Caqueta" in edges:
@@ -44,16 +51,16 @@ def graph_with_incident(incident: bool) -> Graph:
     return graph
 
 
-def heuristic(goal: str) -> dict[str, float]:
+def heuristic(goal: str, graph: Graph = BASE_GRAPH) -> dict[str, float]:
     """Calcula distancias sin incidente: cota inferior admisible y consistente."""
-    distances = {node: inf for node in BASE_GRAPH}
+    distances = {node: inf for node in graph}
     distances[goal] = 0.0
     queue = [(0.0, goal)]
     while queue:
         cost, node = heappop(queue)
         if cost != distances[node]:
             continue
-        for previous, edges in BASE_GRAPH.items():
+        for previous, edges in graph.items():
             if node in edges and cost + edges[node] < distances[previous]:
                 distances[previous] = cost + edges[node]
                 heappush(queue, (distances[previous], previous))
@@ -61,14 +68,15 @@ def heuristic(goal: str) -> dict[str, float]:
 
 
 def search(algorithm: str, origin: str, destination: str,
-           incident: bool = False) -> SearchResult:
+           incident: bool = False, *, bidirectional: bool = False) -> SearchResult:
     """Ejecuta una búsqueda y mide expansiones, costo y tiempo."""
     if origin not in BASE_GRAPH or destination not in BASE_GRAPH:
         raise ValueError("Estación de origen o destino desconocida")
     if algorithm not in {"bfs", "dfs", "astar", "hill"}:
         raise ValueError("Algoritmo desconocido")
-    graph = graph_with_incident(incident)
-    h = heuristic(destination)
+    base = ROUTING_GRAPH if bidirectional else BASE_GRAPH
+    graph = graph_with_incident(incident, base)
+    h = heuristic(destination, base)
     start = perf_counter()
     expanded = 0
     path: list[str] = []

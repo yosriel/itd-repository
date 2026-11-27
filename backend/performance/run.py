@@ -26,18 +26,20 @@ JAR = BACK / 'target/metropolitano-backend-api-0.0.1-SNAPSHOT.jar'
 SCENARIO = dict(origen='Naranjal', destino='Estacion_Central', franja_horaria=7.75,
                 es_hora_punta=1, distancia_km=12, afluencia_anden=410,
                 frecuencia_buses_min=5.5, incidencia_caqueta=1, tipo_servicio='Regular')
+REGULAR_JOURNEY = dict(origin='Chimpu Ocllo', destination='Matellini')
 results = []
 
 
-def call(url, data=None, token=None, key=None):
+def call(url, data=None, token=None, key=None, method=None):
     headers = {'Content-Type': 'application/json'}
     if token:
         headers['Authorization'] = 'Bearer ' + token
     if key:
         headers['Idempotency-Key'] = key
-    req = Request(url, headers=headers, data=None if data is None else json.dumps(data).encode())
+    req = Request(url, headers=headers, method=method,
+                  data=None if data is None else json.dumps(data).encode())
     with build_opener(ProxyHandler({})).open(req, timeout=8) as response:
-        return json.load(response)
+        return None if response.status == 204 else json.load(response)
 
 
 @contextmanager
@@ -136,11 +138,24 @@ def main():
                       '--spring.datasource.password=', '--spring.flyway.enabled=true',
                       '--spring.flyway.url=' + test_url, '--spring.flyway.user=sa',
                       '--spring.flyway.password=', '--server.address=127.0.0.1',
-                      '--server.port={port}', '--spring.profiles.active=demo'],
+                      '--server.port={port}', '--spring.profiles.active=demo', '--metrolima.guest-access=true'],
                      '/actuator/health', {},
                      Path(tmp)/'spring.log') as spring:
             base = spring + '/api/v1/demo'
             token = call(base+'/sessions/presentation', {})['token']
+            credentials = dict(phone='912345678', password='PruebaRendimiento#123')
+            new_account = call(base+'/register', dict(
+                firstName='Prueba', lastName='Rendimiento', dni='00123456',
+                email='rendimiento.metrolima@gmail.com', **credentials,
+            ))['token']
+            call(base+'/sessions/current', token=new_account, method='DELETE')
+
+            def sign_in_and_out(_):
+                session = call(base+'/sessions', credentials)['token']
+                call(base+'/sessions/current', token=session, method='DELETE')
+
+            measure('inicio-cierre-sesion', 4, 80, sign_in_and_out)
+
             def state():
                 return call(base+'/state', token=token)
 
@@ -157,6 +172,14 @@ def main():
 
                 mix(0)
                 mix(1)
+                def regular_journey(_):
+                    result = call(ai+'/regular/plan', REGULAR_JOURNEY)
+                    first, second = result['options'][0]
+                    assert [first['service'], second['service']] == ['B', 'C']
+                    assert first['stops'][-1] == second['stops'][0] == 'Estación Central'
+
+                regular_journey(0)
+                measure('planeador-regular', 8, 240, regular_journey)
                 measure('carga', 6, 480, mix)
                 for users in [4, 12, 24]:
                     measure('estres', users, 320, mix)

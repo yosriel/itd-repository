@@ -4,6 +4,7 @@ import { useApp } from './AppProvider';
 export function useAssistant() {
   const { mode, askAssistant } = useApp();
   const [message, setMessage] = useState('');
+  const [submittedQuestion, setSubmittedQuestion] = useState('');
   const [reply, setReply] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,6 +24,7 @@ export function useAssistant() {
       return;
     }
     pending.current = true;
+    setSubmittedQuestion(question);
     setLoading(true);
     setError('');
     setReply('');
@@ -41,5 +43,5 @@ export function useAssistant() {
       if (mounted.current) { setLoading(false); }
     }
   }
-  return { mode, message, setMessage, reply, error, loading, send };
+  return { mode, message, setMessage, submittedQuestion, reply, error, loading, send };
 }

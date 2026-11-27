@@ -74,12 +74,16 @@ export function Page({
   back,
   action,
   header,
+  footer,
+  scrollRef,
 }: React.PropsWithChildren<{
   title?: string;
   subtitle?: string;
   back?: () => void;
   action?: React.ReactNode;
   header?: React.ReactNode;
+  footer?: React.ReactNode;
+  scrollRef?: React.Ref<React.ComponentRef<typeof ScrollView>>;
 }>) {
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-canvas">
@@ -108,11 +112,13 @@ export function Page({
         </View>
       )}
       <ScrollView
+        ref={scrollRef}
         keyboardShouldPersistTaps="handled"
         contentContainerClassName="px-5 pt-4 pb-8 gap-4"
       >
         {children}
       </ScrollView>
+      {footer}
     </SafeAreaView>
   );
 }

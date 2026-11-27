@@ -1,15 +1,21 @@
+import { sendTravelNotice } from '../deviceNotifications';
 import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useIsFocused } from '@react-navigation/native';
+import { useDeviceLocation } from '../DeviceLocation';
+import { destinationGroups, nearestStation } from '../stations';
 import { useApp } from '../AppProvider';
 import { aiSupportedStations, requestAiRoute, Scenario, stationLabel, AiRouteResponse } from '../aiRoute';
 import { DemoPlan } from '../demoTransit';
 import { RoutesStackParams } from '../navigationTypes';
 import { Button, Card, Heading, Page, Pill, Sub } from '../ui';
 
-export function Planner({ navigation }: NativeStackScreenProps<RoutesStackParams, 'Planner'>) {
-  const [origin, setOrigin] = useState('Naranjal');
+export function PredictionPlanner({ navigation }: NativeStackScreenProps<RoutesStackParams, 'Prediction'>) {
+  const { fix } = useDeviceLocation();
+  const [selectedOrigin, setOrigin] = useState('');
+  const [planOrigin, setPlanOrigin] = useState('');
+  const origin = selectedOrigin || planOrigin || (fix ? nearestStation(fix) : '');
   const [destination, setDestination] = useState('');
   const [selecting, setSelecting] = useState<'origin' | 'destination' | null>(null);
   const [result, setResult] = useState<DemoPlan | null>(null);
@@ -20,6 +26,7 @@ export function Planner({ navigation }: NativeStackScreenProps<RoutesStackParams
   const [error, setError] = useState('');
   const [searched, setSearched] = useState(false);
   async function searchRoute() {
+    setPlanOrigin(origin);
     setLoading(true);
     setError('');
     setAiResult(null);
@@ -43,18 +50,42 @@ export function Planner({ navigation }: NativeStackScreenProps<RoutesStackParams
     }
   }
   return (
-    <Page title="Planea tu ruta" subtitle="Consulta tu recorrido">
+    <Page title="Simular tiempos y afluencia" back={() => navigation.goBack()}>
       <Sub>Origen</Sub>
-      <Button title={origin} variant="ghost" onPress={() => setSelecting('origin')} />
+      <Button title={origin || 'Selecciona el origen'} variant="ghost" disabled={loading} onPress={() => setSelecting('origin')} />
+      {!selectedOrigin && fix && origin === nearestStation(fix) && <Sub>Estación más cercana según tu ubicación</Sub>}
       <Sub>¿A dónde vas?</Sub>
-      <Button title={destination || 'Selecciona una estación'} variant="ghost" onPress={() => setSelecting('destination')} />
-      <Button title="Intercambiar estaciones" variant="ghost" disabled={!destination} onPress={() => { setOrigin(destination); setDestination(origin); setResult(null); setSearched(false); }} />
+      <Button title={destination || 'Selecciona una estación'} variant="ghost" disabled={!origin || loading} onPress={() => setSelecting('destination')} />
+      <Button title="Intercambiar estaciones" variant="ghost" disabled={!destination || loading} onPress={() => { setOrigin(destination); setDestination(origin); setResult(null); setSearched(false); }} />
       <Modal visible={!!selecting} transparent onRequestClose={() => setSelecting(null)}>
         <View className="flex-1 justify-end bg-black/50">
           <View className="max-h-[75%] w-full max-w-[480px] self-center rounded-t-3xl bg-white p-5">
             <Heading>Selecciona {selecting === 'origin' ? 'origen' : 'destino'}</Heading>
             <ScrollView className="my-4">
-              {aiSupportedStations.map(station => <Pressable key={station} accessibilityRole="button" onPress={() => { if (selecting === 'origin') { setOrigin(station); } else { setDestination(station); } setSelecting(null); setResult(null); setAiResult(null); setSearched(false); }} className="min-h-[48px] justify-center border-b border-line py-3"><Text className="font-sans text-[14px] text-ink">{station}</Text></Pressable>)}
+              {(selecting === 'origin' ? [{ label: '', stations: aiSupportedStations }] : destinationGroups(origin)).map(group => (
+                <View key={group.label} className="gap-2">
+                  {group.label !== '' && <Heading>{group.label}</Heading>}
+                  {group.stations.length === 0 && <Sub>Sin estaciones en este sentido.</Sub>}
+                  {group.stations.map(station => (
+                    <Pressable key={station} accessibilityRole="button" onPress={() => {
+                      if (selecting === 'origin') {
+                        setOrigin(station);
+                        if (station === destination) { setDestination(''); }
+                      } else {
+                        setPlanOrigin(origin);
+                        setDestination(station);
+                      }
+                      setSelecting(null);
+                      setResult(null);
+                      setAiResult(null);
+                      setSearched(false);
+                      setError('');
+                    }} className="min-h-[48px] justify-center border-b border-line py-3">
+                      <Text className="font-sans text-[14px] text-ink">{station}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              ))}
             </ScrollView>
             <Button title="Cancelar" variant="ghost" onPress={() => setSelecting(null)} />
           </View>
@@ -72,8 +103,8 @@ export function Planner({ navigation }: NativeStackScreenProps<RoutesStackParams
           <Switch accessibilityLabel="Incluir incidencia en Caquetá" value={incident} onValueChange={value => { setIncident(value); setResult(null); setAiResult(null); }} />
         </View>
       </View>
-      <Button title={loading ? 'Calculando…' : 'Buscar ruta'} disabled={!destination || destination === origin || loading} onPress={searchRoute} />
-      {origin === destination && <Sub>Elige dos estaciones diferentes.</Sub>}
+      <Button title={loading ? 'Calculando…' : 'Buscar ruta'} disabled={!origin || !destination || destination === origin || loading} onPress={searchRoute} />
+      {origin !== '' && origin === destination && <Sub>Elige dos estaciones diferentes.</Sub>}
       {error !== '' && <Text accessibilityRole="alert" className="font-sans text-[13px] text-[#9F211B]">{error}</Text>}
       {searched && !result && error === '' && <Sub>No se encontró una ruta entre estas estaciones.</Sub>}
       {result && <Card><View className="gap-3"><Heading>{origin} → {destination}</Heading><Sub>{result.linea}</Sub><Heading>{result.tiempo}{result.transbordos === undefined ? '' : ` · ${result.transbordos} transbordos`}</Heading><Button title="Ver ruta trazada" variant="amber" onPress={() => navigation.navigate('Detail', { plan: result })} /></View></Card>}
@@ -118,9 +149,11 @@ export function Detail({
   useEffect(() => {
     if (running && index >= plan.paradas.length) {
       setRunning(false);
-      notify('Has llegado al destino de la simulación');
+      const message = 'Has llegado al destino de la simulación';
+      notify(message);
+      if (state.notifications) { sendTravelNotice(message).catch(() => notify('No se pudo enviar el aviso de llegada.')); }
     }
-  }, [index, running, plan.paradas.length, notify]);
+  }, [index, running, plan.paradas.length, notify, state.notifications]);
   return (
     <Page
       title={`${plan.origin} → ${plan.destinoNombre}`}

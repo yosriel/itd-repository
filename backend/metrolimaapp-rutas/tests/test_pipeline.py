@@ -111,6 +111,11 @@ def test_api_end_to_end_and_missing_models(tmp_path, monkeypatch, fitted_models)
     assert math.isfinite(body["eta_modelo_minutos"])
     assert 0 <= body["probabilidad_saturacion"] <= 1
     assert isinstance(body["saturacion_critica"], bool)
+    reverse = client.post("/predict", json={
+        **scenario, "origen": "Estacion_Central", "destino": "Naranjal",
+    })
+    assert reverse.status_code == 200
+    assert reverse.json()["ruta"] == list(reversed(body["ruta"]))
     assert client.post("/predict", json={**scenario, "distancia_km": -1}
                        ).status_code == 422
     assert client.post("/predict", json={**scenario, "destino": "Inexistente"}

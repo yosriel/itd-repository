@@ -266,7 +266,7 @@ function RechargeSheet({
                 </Text>
                 <Text className="text-center font-sans text-[13px] leading-5 text-ink">
                   No hubo pago, transferencia ni cargo real. Este comprobante
-                  solo corresponde a una simulación académica.
+                  solo corresponde a una simulación.
                 </Text>
               </View>
               <View className="gap-2 rounded-xl border border-line p-4">
@@ -301,7 +301,7 @@ function RechargeSheet({
                 accessibilityRole="alert"
                 className="rounded-xl border border-[#E8C882] bg-[#FFF8E8] p-3"
               >
-                <Heading>Entorno académico · Sin pagos reales</Heading>
+                <Heading>Recarga simulada</Heading>
                 <Sub>
                   No se cobra dinero ni se conecta con Yape o bancos. No
                   ingreses números de tarjeta, vencimiento, CVV ni claves.
@@ -345,7 +345,7 @@ function RechargeSheet({
                   </Heading>
                   <Sub>
                     {value === 'YAPE_DEMO'
-                      ? 'QR académico que no inicia pagos.'
+                      ? 'QR de referencia para la tarjeta digital.'
                       : 'Tarjeta de muestra; no se solicitan datos bancarios.'}
                   </Sub>
                 </Pressable>
@@ -385,7 +385,7 @@ function RechargeSheet({
                         ),
                     )}
                   </Svg>
-                  <Sub>Destino de muestra: Metropolitano · proyecto académico</Sub>
+                  <Sub>Destino de muestra: Metropolitano</Sub>
                 </View>
               )}
               {method === 'CARD_DEMO' && (
@@ -621,7 +621,6 @@ export function Profile({
               <Text className="font-title text-[20px] text-navy">
                 {state.profile.fullName}
               </Text>
-              <Sub>Cuenta de presentación</Sub>
             </View>
             {[rows.slice(0, 3), rows.slice(3, 6), rows.slice(6)].map(
               (group, groupIndex) => (
@@ -686,7 +685,7 @@ export function Settings({
     },
     privacy: {
       title: 'Privacidad',
-      text: 'Utiliza los datos asignados para la presentación. La cuenta conectada guarda perfil, saldo de prueba y preferencias en la base de datos del servidor. Esta versión no solicita GPS ni envía notificaciones push. No contiene una integración oficial con ATU.',
+      text: 'Tu cuenta guarda el perfil, el saldo simulado y las preferencias en el servidor. Con tu permiso, la app guarda la última ubicación en el almacenamiento seguro del teléfono y muestra avisos locales de viaje. Puedes cambiar los permisos en Ajustes. No contiene una integración oficial con ATU.',
     },
     help: {
       title: 'Ayuda y soporte',

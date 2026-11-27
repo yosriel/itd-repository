@@ -13,6 +13,7 @@ import {
   validateProfile,
 } from './domain';
 import { request } from './api';
+import { normalizeRegistration, RegistrationInput } from './registration';
 
 type AppContextValue = {
   state: AppState;
@@ -21,14 +22,7 @@ type AppContextValue = {
   toast: string;
   notify: (text: string) => void;
   login: (phone: string, credential: string) => Promise<void>;
-  loginPresentation: () => Promise<void>;
-  register: (input: {
-    fullName: string;
-    phone: string;
-    dni: string;
-    email: string;
-    password: string;
-  }) => Promise<void>;
+  register: (input: RegistrationInput) => Promise<void>;
   logout: () => Promise<void>;
   saveProfile: (profile: Profile) => Promise<void>;
   setNotifications: (enabled: boolean) => Promise<void>;
@@ -89,36 +83,25 @@ export function AppProvider({ children }: React.PropsWithChildren) {
     notify: setToast,
     login: (phone, credential) =>
       operation(async () => {
-        if (!/^9\d{8}$/.test(phone) || !credential) {
+        if (!/^9\d{8}$/.test(phone.trim()) || !credential) {
           throw new Error('Ingresa un celular y contraseña válidos');
         }
         const session = await request<{ token: string }>(
           '/sessions',
           undefined,
           'POST',
-          { phone, password: credential },
-        );
-        await openSession(session.token);
-      }),
-    loginPresentation: () =>
-      operation(async () => {
-        const session = await request<{ token: string }>(
-          '/sessions/presentation',
-          undefined,
-          'POST',
+          { phone: phone.trim(), password: credential },
         );
         await openSession(session.token);
       }),
     register: input =>
       operation(async () => {
-        if (input.password.length < 10) {
-          throw new Error('La contraseña debe tener al menos 10 caracteres');
-        }
+        const data = normalizeRegistration(input);
         const session = await request<{ token: string }>(
           '/register',
           undefined,
           'POST',
-          input,
+          data,
         );
         await openSession(session.token);
       }),

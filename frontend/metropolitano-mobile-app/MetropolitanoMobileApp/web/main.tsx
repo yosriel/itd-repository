@@ -10,7 +10,10 @@ import {
 import { logoXml } from '../assets/images/logo';
 import './style.css';
 import { Assistant } from './Assistant';
+import { RegularPlanner } from './RegularPlanner';
 import { assistantSections } from '../src/assistantOptions';
+import { destinationGroups, nearestStation } from '../src/stations';
+import { passwordHint } from '../src/registration';
 import type { TabParams } from '../src/navigationTypes';
 import { aiSupportedStations, requestAiRoute, Scenario, stationLabel, AiRouteResponse } from '../src/aiRoute';
 const logo = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(logoXml)}`;
@@ -24,8 +27,10 @@ function WebApp() {
   const app = useApp();
   const [splash, setSplash] = useState(true);
   const [tab, setTab] = useState('Inicio');
+  const [showSimulation, setShowSimulation] = useState(false);
   const [registering, setRegistering] = useState(false);
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [dni, setDni] = useState('');
   const [email, setEmail] = useState('');
@@ -33,7 +38,7 @@ function WebApp() {
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
-  const [origin, setOrigin] = useState('Naranjal');
+  const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
   const [plan, setPlan] = useState<DemoPlan | null>(null);
   const [aiPrediction, setAiPrediction] = useState<AiRouteResponse | null>(null);
@@ -52,7 +57,7 @@ function WebApp() {
   const [profile, setProfile] = useState(false);
   const [draft, setDraft] = useState(app.state.profile);
   const [clock, setClock] = useState(Date.now());
-  const [locationExample, setLocationExample] = useState(false);
+  const [locationMessage, setLocationMessage] = useState('');
   const [travelIndex, setTravelIndex] = useState(-1);
   const [read, setRead] = useState(false);
   const [key, setKey] = useState('');
@@ -90,6 +95,22 @@ function WebApp() {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error');
     }
+  }
+  function useMyLocation() {
+    if (!navigator.geolocation) {
+      setLocationMessage('Este navegador no ofrece ubicación.');
+      return;
+    }
+    setLocationMessage('Buscando la estación más cercana…');
+    navigator.geolocation.getCurrentPosition(({ coords }) => {
+      const nearest = nearestStation(coords);
+      setOrigin(nearest);
+      setDestination('');
+      setPlan(null);
+      setAiPrediction(null);
+      setLocationMessage(`Estación más cercana: ${nearest}`);
+    }, () => setLocationMessage('No se pudo obtener tu ubicación. Puedes elegir el origen manualmente.'),
+    { maximumAge: 60000, timeout: 15000 });
   }
   async function searchRoute() {
     setPlan(null);
@@ -155,7 +176,6 @@ function WebApp() {
               </h1>
               <p>Tu ruta, en un solo lugar.</p>
               {button('Pulsa para continuar', () => setSplash(false))}
-              <small>Experiencia académica · Datos de referencia</small>
             </div>
           </section>
         ) : (
@@ -165,11 +185,11 @@ function WebApp() {
               src={images.wordmark}
               alt="Logotipo del HTML"
             />
-            <h1>{registering ? 'Crear cuenta académica' : 'Inicia sesión'}</h1>
+            <h1>{registering ? 'Crear cuenta' : 'Inicia sesión'}</h1>
             <p>
               {registering
-                ? 'Crea un perfil para probar la aplicación. No uses contraseñas ni datos personales que utilices en otros servicios.'
-                : 'Ingresa con el celular y contraseña de tu cuenta académica.'}
+                ? 'Completa tus datos para crear tu cuenta.'
+                : 'Ingresa con el celular y contraseña de tu cuenta.'}
             </p>
             <form
               onSubmit={async e => {
@@ -180,7 +200,7 @@ function WebApp() {
                     return;
                   }
                   await run(() =>
-                    app.register({ fullName, phone, dni, email, password }),
+                    app.register({ firstName, lastName, phone, dni, email, password }),
                   );
                 } else {
                   await run(() => app.login(phone, password));
@@ -188,16 +208,14 @@ function WebApp() {
               }}
             >
               {registering && (
-                <label>
-                  Nombre completo
-                  <input
-                    value={fullName}
-                    onChange={e => setFullName(e.target.value)}
-                    maxLength={100}
-                    autoComplete="name"
-                    required
-                  />
-                </label>
+                <>
+                  <label>Nombres
+                    <input value={firstName} onChange={e => setFirstName(e.target.value)} maxLength={100} autoComplete="given-name" required />
+                  </label>
+                  <label>Apellidos
+                    <input value={lastName} onChange={e => setLastName(e.target.value)} maxLength={100} autoComplete="family-name" required />
+                  </label>
+                </>
               )}
               <label>
                 Número de celular
@@ -213,7 +231,7 @@ function WebApp() {
               {registering && (
                 <>
                   <label>
-                    DNI (dato académico de prueba)
+                    DNI
                     <input
                       value={dni}
                       onChange={e => setDni(e.target.value)}
@@ -262,11 +280,7 @@ function WebApp() {
                       required
                     />
                   </label>
-                  <small>
-                    La contraseña se guarda como hash. Esta versión no verifica
-                    la titularidad del celular ni del correo y no es una cuenta
-                    de producción.
-                  </small>
+                  <small>{passwordHint}</small>
                 </>
               )}
               <button disabled={app.busy}>
@@ -290,24 +304,11 @@ function WebApp() {
                 ? 'Ya tengo cuenta · Iniciar sesión'
                 : '¿No tienes cuenta? Crear cuenta'}
             </button>
-            {!registering && (
-              <>
-                <button
-                  type="button"
-                  className="ghost"
-                  disabled={app.busy}
-                  onClick={() => run(app.loginPresentation)}
-                >
-                  Entrar a la presentación
-                </button>
-              </>
-            )}
             {error && (
               <p role="alert" className="error">
                 {error}
               </p>
             )}
-            <small>Acceso de presentación · Datos de prueba</small>
           </section>
         )}
       </main>
@@ -359,12 +360,9 @@ function WebApp() {
       <section className="content">
         {tab === 'Inicio' && (
           <>
-            <button className="ghost" onClick={() => setModal('location')}>
-              {locationExample
-                ? 'Ejemplo: Naranjal · 3 min caminando'
-                : 'Ver ejemplo de ubicación'}
-            </button>
-            <h2>Estaciones cercanas</h2>
+            {button('Usar mi ubicación', useMyLocation, true)}
+            {locationMessage && <p role="status">{locationMessage}</p>}
+            <h2>Estaciones</h2>
             {app.state.fixtures.stations
               .filter(s => s.name.toLowerCase().includes(query.toLowerCase()))
               .map(s => (
@@ -388,7 +386,7 @@ function WebApp() {
               {[images.bus, images.second].map((image, i) => (
                 <article key={image} className="card">
                   <img src={image} alt="Fotografía del HTML" />
-                  <strong>{i ? 'Regular B' : 'Expreso 1'}</strong>
+                  <strong>{i ? 'Regular C' : 'Regular A'}</strong>
                   <small>
                     {i ? 'Central → Matellini' : 'Naranjal → Central'}
                   </small>
@@ -397,7 +395,8 @@ function WebApp() {
             </div>
           </>
         )}
-        {tab === 'Rutas' &&
+        {tab === 'Rutas' && !showSimulation && <RegularPlanner onSimulation={() => setShowSimulation(true)} />}
+        {tab === 'Rutas' && showSimulation &&
           (detail && plan ? (
             <>
               {button('Volver al planeador', () => setDetail(false), true)}
@@ -425,21 +424,26 @@ function WebApp() {
             </>
           ) : (
             <>
+              {button('Volver a rutas regulares', () => setShowSimulation(false), true)}
               <label>
                 Origen
                 <select
                   value={origin}
                   onChange={e => {
                     setOrigin(e.target.value);
+                    setDestination('');
                     setPlan(null);
                     setAiPrediction(null);
                   }}
                 >
+                  <option value="">Selecciona el origen</option>
                   {aiSupportedStations.map(s => (
                     <option key={s}>{s}</option>
                   ))}
                 </select>
               </label>
+              {button('Usar mi ubicación', useMyLocation, true)}
+              {locationMessage && <p role="status">{locationMessage}</p>}
               <label>
                 ¿A dónde vas?
                 <select
@@ -451,8 +455,10 @@ function WebApp() {
                   }}
                 >
                   <option value="">Selecciona una estación</option>
-                  {aiSupportedStations.map(s => (
-                    <option key={s}>{s}</option>
+                  {origin && destinationGroups(origin).map(group => (
+                    <optgroup key={group.label} label={group.label}>
+                      {group.stations.map(name => <option key={name}>{name}</option>)}
+                    </optgroup>
                   ))}
                 </select>
               </label>
@@ -490,7 +496,7 @@ function WebApp() {
                 </section>
               )}
               <button
-                disabled={!destination || origin === destination || routeLoading}
+                disabled={!origin || !destination || origin === destination || routeLoading}
                 onClick={searchRoute}
               >
                 {routeLoading ? 'Calculando…' : 'Buscar ruta'}
@@ -698,20 +704,6 @@ function WebApp() {
             >
               ×
             </button>
-            {modal === 'location' && (
-              <>
-                <h1>Permite tu ubicación</h1>
-                <p>
-                  Puedes ver el ejemplo sin compartir tu ubicación real. No se
-                  solicita permiso GPS.
-                </p>
-                {button('Ver ejemplo de ubicación', () => {
-                  setLocationExample(true);
-                  setModal('');
-                })}
-                {button('Ahora no', () => setModal(''), true)}
-              </>
-            )}
             {modal === 'station' && (
               <>
                 <h1>{station}</h1>
@@ -763,7 +755,7 @@ function WebApp() {
                       <strong>{money(amount)}</strong>
                       <p>
                         No hubo pago, transferencia ni cargo real. Este
-                        comprobante corresponde solo a una simulación académica.
+                        comprobante corresponde solo a una simulación.
                       </p>
                     </section>
                     <div className="payment-details">
@@ -787,7 +779,7 @@ function WebApp() {
                 ) : (
                   <>
                     <section className="payment-notice" role="note">
-                      <strong>Entorno académico · Sin pagos reales</strong>
+                      <strong>Recarga simulada</strong>
                       <p>
                         No se cobra dinero ni se conecta con Yape o bancos. No
                         ingreses números de tarjeta, vencimiento, CVV ni claves.
@@ -829,7 +821,7 @@ function WebApp() {
                           dangerouslySetInnerHTML={{ __html: paymentQr }}
                         />
                         <small>
-                          Destino de muestra: Metropolitano · proyecto académico
+                          Destino de muestra: Metropolitano
                         </small>
                       </section>
                     ) : (

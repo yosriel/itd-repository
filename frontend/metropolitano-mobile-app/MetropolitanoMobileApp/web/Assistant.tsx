@@ -4,11 +4,12 @@ import { assistantQuestions, assistantSections } from '../src/assistantOptions';
 import type { TabParams } from '../src/navigationTypes';
 
 export function Assistant({ onNavigate }: { onNavigate: (tab: keyof TabParams) => void }) {
-  const { mode, message, setMessage, reply, error, loading, send } = useAssistant();
+  const { mode, message, setMessage, submittedQuestion, reply, error, loading, send } = useAssistant();
   const [open, setOpen] = useState(false);
   const launcher = useRef<HTMLButtonElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   const close = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -16,6 +17,12 @@ export function Assistant({ onNavigate }: { onNavigate: (tab: keyof TabParams) =
       else { close.current?.focus(); }
     }
   }, [open, mode]);
+
+  useEffect(() => {
+    if (open && (loading || reply || error)) {
+      panel.current?.scrollTo({ top: 0 });
+    }
+  }, [open, loading, reply, error, submittedQuestion]);
 
   function closePanel() {
     setOpen(false);
@@ -26,10 +33,18 @@ export function Assistant({ onNavigate }: { onNavigate: (tab: keyof TabParams) =
     <div className="assistant-float" onKeyDown={event => {
       if (event.key === 'Escape' && open) { event.stopPropagation(); closePanel(); }
     }}>
-      {open && <section className="card assistant" id="assistant-panel" aria-labelledby="assistant-title">
+      {open && <section ref={panel} className="card assistant" id="assistant-panel" aria-labelledby="assistant-title">
       <div className="assistant-header">
         <h2 id="assistant-title">Asistente IA</h2>
         <button ref={close} type="button" className="assistant-close" aria-label="Cerrar asistente" onClick={closePanel}>×</button>
+      </div>
+      <div className="assistant-result" aria-live="polite" aria-atomic="true">
+        {loading && <p>Buscando una respuesta…</p>}
+        {error && <p className="assistant-error">{error}</p>}
+        {reply && <div className="assistant-reply">
+          <h3>Respuesta del asistente</h3>
+          <p>{reply}</p>
+        </div>}
       </div>
       <p className="assistant-notice">Tu consulta y datos demo se envían a Google. No compartas datos personales.</p>
       <div className="assistant-options" aria-label="Ir a un apartado">
@@ -63,11 +78,6 @@ export function Assistant({ onNavigate }: { onNavigate: (tab: keyof TabParams) =
               {loading ? 'Consultando…' : 'Enviar pregunta'}
             </button>
           </form>
-          <div className="assistant-result" aria-live="polite" aria-atomic="true">
-            {loading && <p>Consultando al asistente…</p>}
-            {error && <p className="assistant-error">{error}</p>}
-            {reply && <p>Asistente: {reply}</p>}
-          </div>
         </>
       )}
       </section>}

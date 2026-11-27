@@ -12,19 +12,21 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useApp } from '../AppProvider';
+import { passwordHint } from '../registration';
 import { assets, Button, Field, Logo, Photo, Sub } from '../ui';
 
 export function Auth() {
   const [splash, setSplash] = useState(true);
   const [registering, setRegistering] = useState(false);
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [dni, setDni] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [error, setError] = useState('');
-  const { login, loginPresentation, register, busy } = useApp();
+  const { login, register, busy } = useApp();
   const { height } = useWindowDimensions();
   async function enter() {
     setError('');
@@ -33,20 +35,12 @@ export function Auth() {
         if (password !== passwordConfirmation) {
           throw new Error('Las contraseñas no coinciden');
         }
-        await register({ fullName, phone, dni, email, password });
+        await register({ firstName, lastName, phone, dni, email, password });
       } else {
         await login(phone, password);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo ingresar');
-    }
-  }
-  async function enterPresentation() {
-    setError('');
-    try {
-      await loginPresentation();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo abrir la presentación');
     }
   }
   if (splash) {
@@ -76,7 +70,7 @@ export function Auth() {
             onPress={() => setSplash(false)}
           />
           <Text className="text-center font-sans text-[11px] text-[#C7D5E2]">
-            Experiencia académica · Datos de referencia{'\n'}Fotografía:
+            Fotografía:
             Wikimedia Commons
           </Text>
         </ScrollView>
@@ -97,34 +91,32 @@ export function Auth() {
             <Logo wordmark />
           </View>
           <Text className="font-title text-[24px] text-navy">
-            {registering ? 'Crear cuenta académica' : 'Inicia sesión'}
+            {registering ? 'Crear cuenta' : 'Inicia sesión'}
           </Text>
           <Sub>
             {registering
-              ? 'Crea un perfil para probar la aplicación. No uses contraseñas ni datos personales que utilices en otros servicios.'
-              : 'Ingresa con el celular y contraseña de tu cuenta académica.'}
+              ? 'Completa tus datos para crear tu cuenta.'
+              : 'Ingresa con el celular y contraseña de tu cuenta.'}
           </Sub>
           {registering && (
-            <Field
-              label="Nombre completo"
-              value={fullName}
-              onChange={setFullName}
-              maxLength={100}
-            />
+            <>
+              <Field label="Nombres" value={firstName} onChange={setFirstName} maxLength={100} />
+              <Field label="Apellidos" value={lastName} onChange={setLastName} maxLength={100} />
+            </>
           )}
           <Field
             label="Número de celular"
             value={phone}
-            onChange={setPhone}
+            onChange={value => setPhone(value.replace(/\D/g, '').slice(0, 9))}
             numeric
             maxLength={9}
           />
           {registering && (
             <>
               <Field
-                label="DNI (dato académico de prueba)"
+                label="DNI"
                 value={dni}
-                onChange={setDni}
+                onChange={value => setDni(value.replace(/\D/g, '').slice(0, 8))}
                 numeric
                 maxLength={8}
               />
@@ -154,18 +146,12 @@ export function Auth() {
                 secure
                 maxLength={72}
               />
-              <Sub>
-                La contraseña se guarda como hash. Esta versión no verifica la
-                titularidad del celular ni del correo y no es una cuenta de
-                producción.
-              </Sub>
+              <Sub>{passwordHint}</Sub>
             </>
           )}
           {error !== '' && (
             <Text accessibilityRole="alert" className="font-sans text-critical">
               {error}
-              {'\n'}Si el servidor estaba inactivo, espera un momento y vuelve
-              a intentarlo.
             </Text>
           )}
           <Button
@@ -192,23 +178,6 @@ export function Auth() {
               ? 'Ya tengo una cuenta · Iniciar sesión'
               : '¿No tienes cuenta? Crear cuenta'}
           </Text>
-          {!registering && (
-            <>
-              <Button
-                title="Entrar a la presentación"
-                variant="ghost"
-                onPress={enterPresentation}
-                disabled={busy}
-              />
-            </>
-          )}
-          <Sub>
-            La primera conexión después de un tiempo sin uso puede tardar más
-            mientras el servidor se inicia.
-          </Sub>
-          <Sub>
-            Acceso de presentación · Datos de prueba
-          </Sub>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

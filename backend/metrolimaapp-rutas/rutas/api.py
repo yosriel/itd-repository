@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from rutas.data_pipeline import FEATURES
 from rutas.experiment import ARTIFACTS
+from rutas.regular import CATALOG, STATIONS, itineraries
 from rutas.search import BASE_GRAPH, search
 
 app = FastAPI(title="MetroLimaApp", version="1.0")
@@ -30,6 +31,28 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["Authorization", "Content-Type"],
 )
+
+
+class RegularPlanRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    origin: str = Field(min_length=1, max_length=80)
+    destination: str = Field(min_length=1, max_length=80)
+    service: Literal["A", "B", "C", "D"] | None = None
+
+
+@app.get("/regular/catalog")
+def regular_catalog() -> dict:
+    return CATALOG
+
+
+@app.post("/regular/plan")
+def regular_plan(request: RegularPlanRequest) -> dict:
+    if request.origin not in STATIONS or request.destination not in STATIONS:
+        raise HTTPException(status_code=422, detail="Estación desconocida")
+    if request.origin == request.destination:
+        raise HTTPException(status_code=422, detail="Elige estaciones diferentes")
+    options = itineraries(request.origin, request.destination, request.service)
+    return {"options": options}
 
 
 class PredictionRequest(BaseModel):
@@ -74,7 +97,7 @@ def predict(request: PredictionRequest) -> dict:
     if request.origen not in BASE_GRAPH or request.destino not in BASE_GRAPH:
         raise HTTPException(status_code=422, detail="Estación desconocida")
     result = search("astar", request.origen, request.destino,
-                    bool(request.incidencia_caqueta))
+                    bool(request.incidencia_caqueta), bidirectional=True)
     if not result.path:
         raise HTTPException(status_code=422,
                             detail="No existe ruta en el grafo simulado")

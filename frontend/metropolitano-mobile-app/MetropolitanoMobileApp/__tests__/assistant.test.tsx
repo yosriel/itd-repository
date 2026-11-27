@@ -26,7 +26,7 @@ test('assistant validates messages, requires a connected session and shows repli
   expect(fetchMock).not.toHaveBeenCalled();
   fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ token: 'test-token' }) } as Response);
   fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ profile: {}, alertsRead: false }) } as Response);
-  await act(async () => { await app.loginPresentation(); });
+  await act(async () => { await app.login('912345678', 'ClaveSegura#123'); });
   fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ reply: 'Datos simulados' }) } as Response);
   await act(async () => { await assistant.send(); });
   expect(assistant.reply).toBe('Datos simulados');
@@ -49,25 +49,42 @@ test('assistant validates messages, requires a connected session and shows repli
   fetchMock.mockRestore();
 });
 
-test('floating assistant opens and closes without requiring a connection', async () => {
+test('assistant tab displays its content and navigates to another tab', async () => {
   let tree!: Renderer.ReactTestRenderer;
   const navigate = jest.fn();
   await act(async () => { tree = Renderer.create(<AppProvider><Assistant onNavigate={navigate} /></AppProvider>); });
-  expect(JSON.stringify(tree.toJSON())).not.toContain('Inicia una sesión conectada');
-  await act(async () => {
-    tree.root.findByProps({ accessibilityLabel: 'Abrir asistente de IA' }).props.onPress();
-  });
   expect(JSON.stringify(tree.toJSON())).toContain('Inicia una sesión conectada');
-  await act(async () => {
-    tree.root.findByProps({ accessibilityLabel: 'Cerrar asistente' }).props.onPress();
-  });
-  expect(JSON.stringify(tree.toJSON())).not.toContain('Inicia una sesión conectada');
-  await act(async () => {
-    tree.root.findByProps({ accessibilityLabel: 'Abrir asistente de IA' }).props.onPress();
-  });
   const routesButton = tree.root.findByProps({ accessibilityLabel: 'Ir a Rutas' });
   await act(async () => { routesButton.props.onPress(); });
   expect(navigate).toHaveBeenCalledWith('Routes');
-  expect(JSON.stringify(tree.toJSON())).not.toContain('Inicia una sesión conectada');
   await act(async () => { tree.unmount(); });
+});
+
+test('a suggested question puts the response ahead of the other controls', async () => {
+  let tree!: Renderer.ReactTestRenderer;
+  const fetchMock = jest.spyOn(globalThis, 'fetch');
+  const suggestion = '¿Cómo puedo planificar una ruta?';
+  const answer = 'Abre Rutas, elige el origen y destino y toca Buscar ruta.';
+  try {
+    await act(async () => {
+      tree = Renderer.create(<AppProvider><Capture /><Assistant onNavigate={jest.fn()} /></AppProvider>);
+    });
+    fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ token: 'test-token' }) } as Response);
+    fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ profile: {} }) } as Response);
+    await act(async () => { await app.login('912345678', 'ClaveSegura#123'); });
+    fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ reply: answer }) } as Response);
+
+    await act(async () => {
+      tree.root.findAllByProps({ accessibilityLabel: suggestion }).find(node => node.props.onPress)?.props.onPress();
+    });
+
+    const rendered = JSON.stringify(tree.toJSON());
+    const responseIndex = rendered.indexOf(answer);
+    expect(responseIndex).toBeGreaterThan(-1);
+    expect(responseIndex).toBeLessThan(rendered.indexOf('Ver preguntas sugeridas'));
+    expect(responseIndex).toBeLessThan(rendered.indexOf('Pregunta para el asistente'));
+  } finally {
+    if (tree) { await act(async () => { tree.unmount(); }); }
+    fetchMock.mockRestore();
+  }
 });
