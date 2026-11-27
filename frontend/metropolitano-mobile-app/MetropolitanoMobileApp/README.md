@@ -2,7 +2,7 @@
 
 [Descargar el APK para Android](https://metrolimaapp-android.vercel.app/metrolimaapp.apk). Abre el enlace desde tu teléfono, toca el archivo descargado y elige **Instalar**.
 
-## Exposición en la laptop
+## Emulador Android en la laptop
 
 En esta laptop abre una terminal y ejecuta `metrolima-demo`. También puedes iniciar el mismo lanzador desde esta carpeta:
 
@@ -10,9 +10,9 @@ En esta laptop abre una terminal y ejecuta `metrolima-demo`. También puedes ini
 ./scripts/emular-demo.sh
 ```
 
-El lanzador abre un teléfono virtual Android 15, instala el APK de la exposición y muestra la app. La primera ejecución crea el dispositivo `MetroLimaExpoGPS`. Si ya está abierto, el comando reutiliza esa ventana. El APK incluye el código de Expo y usa las APIs públicas por internet.
+El lanzador abre un teléfono virtual Android 15, instala el APK publicado y muestra la app. La primera ejecución crea el dispositivo `MetroLimaExpoGPS`. Si ya está abierto, el comando reutiliza esa ventana. El APK incluye el código de Expo y usa las APIs públicas por internet.
 
-Para la demostración, toca **Pulsa para continuar** e inicia sesión con tu cuenta. Concede el permiso de ubicación de Android mientras usas la app. Después, abre **Rutas** y confirma la estación sugerida por el GPS. Elige un destino de la lista hacia el norte o hacia el sur y toca **Buscar ruta**. Desde **Alertas**, activa los avisos de viaje y toca **Probar notificación**. Android muestra el aviso también al terminar un recorrido simulado. El interruptor combina el permiso del teléfono y la preferencia de la cuenta en Neon. La pestaña **IA** está entre **Alertas** y **Cuenta**. Al terminar, cierra la ventana del emulador.
+Toca **Pulsa para continuar** e inicia sesión con tu cuenta. Concede el permiso de ubicación de Android mientras usas la app. Después, abre **Rutas** y confirma la estación sugerida por el GPS. Elige un destino de la lista hacia el norte o hacia el sur y toca **Buscar ruta**. Desde **Alertas**, activa los avisos de viaje y toca **Probar notificación**. Android muestra el aviso también al terminar un recorrido simulado. El interruptor combina el permiso del teléfono y la preferencia de la cuenta en Neon. La pestaña **IA** está entre **Alertas** y **Cuenta**. Al terminar, cierra la ventana del emulador.
 
 Para usar el lanzador en otra laptop Linux x86_64 se necesitan una sesión gráfica con systemd de usuario, KVM, JDK 21 y el SDK de Android con `platform-tools`, `emulator`, `cmdline-tools/latest` y la imagen `system-images;android-35;google_apis;x86_64`. Configura `ANDROID_HOME` y `JAVA_HOME` si tus instalaciones están en otras rutas. Si falta el APK en `artifacts/`, el lanzador descarga la versión publicada y verifica su SHA-256.
 
