@@ -3,8 +3,10 @@ package metropolitano_backend_api.demo;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.UUID;
+import org.hibernate.annotations.DynamicUpdate;
 
 @Entity
+@DynamicUpdate
 @Table(name = "demo_account")
 public class DemoAccount {
     @Id public String id = UUID.randomUUID().toString();

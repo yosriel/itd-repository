@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import {
-  Modal,
+  AppState,
+  Linking,
   Pressable,
   ScrollView,
   Switch,
@@ -8,13 +9,15 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Bell, CircleCheck, Clock, TriangleAlert, MapPin } from '../icons';
+import { Bell, CircleCheck, Clock, TriangleAlert } from '../icons';
 import {
   NavigationProp,
   useFocusEffect,
   useNavigation,
 } from '@react-navigation/native';
 import { useApp } from '../AppProvider';
+import { DeviceLocation } from '../DeviceLocation';
+import { notificationPermission, sendTravelNotice } from '../deviceNotifications';
 import { StationBoard } from '../StationBoard';
 import { TabParams } from '../navigationTypes';
 import {
@@ -33,8 +36,6 @@ export function Home() {
   const { state } = useApp();
   const navigation = useNavigation<NavigationProp<TabParams>>();
   const [query, setQuery] = useState('');
-  const [gpsPrompt, setGpsPrompt] = useState(true);
-  const [gpsDemo, setGpsDemo] = useState(false);
   const [stationBoard, setStationBoard] = useState<string | null>(null);
   const stations = state.fixtures.stations.filter(station =>
     station.name.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
@@ -71,8 +72,8 @@ export function Home() {
         className="rounded-xl border border-line bg-white px-4 py-3 font-sans text-ink"
       />
     </View>}>
-      {gpsDemo && <Pill label="Estación más cercana: Naranjal (3 min caminando) · Demo" />}
-      <Heading>Estaciones cercanas</Heading>
+      <DeviceLocation />
+      <Heading>Estaciones</Heading>
       {stations.map(station => (
         <Pressable key={station.name} accessibilityRole="button" accessibilityLabel={`Ver próximos buses en ${station.name}`} onPress={() => setStationBoard(station.name)}><Card>
           <View className="flex-row items-center justify-between gap-2">
@@ -96,17 +97,13 @@ export function Home() {
         {[
           {
             trip: 'Naranjal → Central',
-            line: 'Expreso 1',
-            time: '4 min',
+            line: 'Regular A',
             image: assets.bus,
-            status: 'green',
           },
           {
             trip: 'Central → Matellini',
-            line: 'Regular B',
-            time: '11 min',
+            line: 'Regular C',
             image: assets.secondBus,
-            status: 'amber',
           },
         ].map(route => (
           <View
@@ -117,49 +114,36 @@ export function Home() {
             <View className="gap-2 p-3">
               <Sub>{route.trip}</Sub>
               <Heading>{route.line}</Heading>
-              <Pill label={route.time} status={route.status} />
             </View>
           </View>
         ))}
       </ScrollView>
       <StationBoard routes={state.fixtures.rutas} station={stationBoard} close={() => setStationBoard(null)} />
-      <Modal
-        visible={gpsPrompt}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setGpsPrompt(false)}
-      >
-        <View className="flex-1 items-center justify-center bg-black/50 px-8">
-          <View className="w-full max-w-[420px] gap-4 rounded-[20px] bg-white p-6">
-            <View className="items-center">
-              <MapPin size={36} color={colors.steel} />
-            </View>
-            <Text className="text-center font-title text-[19px] text-navy">
-              Permite tu ubicación
-            </Text>
-            <Sub>
-              Se mostrará una ubicación de referencia sin solicitar acceso al GPS.
-            </Sub>
-            <Button
-              title="Ver ejemplo de ubicación"
-              onPress={() => {
-                setGpsDemo(true);
-                setGpsPrompt(false);
-              }}
-            />
-            <Button
-              title="Ahora no"
-              variant="ghost"
-              onPress={() => setGpsPrompt(false)}
-            />
-          </View>
-        </View>
-      </Modal>
     </Page>
   );
 }
 export function Alerts() {
   const { state, setNotifications, readAlerts, notify, busy } = useApp();
+  const [granted, setGranted] = useState(false);
+  const [blocked, setBlocked] = useState(false);
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    const check = () => notificationPermission().then(p => {
+      if (active) { setGranted(p.granted); setBlocked(!p.granted && !p.canAskAgain); }
+    }).catch(() => { if (active) { notify('No se pudo consultar el permiso de avisos.'); } });
+    check();
+    const listener = AppState.addEventListener('change', status => { if (status === 'active') { check(); } });
+    return () => { active = false; listener.remove(); };
+  }, [notify]));
+  async function toggle(enabled: boolean) {
+    if (enabled) {
+      const permission = await notificationPermission(true);
+      setGranted(permission.granted);
+      setBlocked(!permission.granted && !permission.canAskAgain);
+      if (!permission.granted) { notify('Se necesita permiso para mostrar avisos en este dispositivo.'); return; }
+    }
+    await setNotifications(enabled);
+  }
   useFocusEffect(
     useCallback(() => {
       readAlerts().catch(error => notify(error.message));
@@ -170,20 +154,22 @@ export function Alerts() {
       <Card>
         <View className="flex-row items-center justify-between">
           <View className="flex-1">
-            <Heading>Notificaciones push</Heading>
-            <Sub>Configura tus preferencias de avisos para las estaciones</Sub>
+            <Heading>Avisos de viaje</Heading>
+            <Sub>Recibe un aviso al finalizar tu recorrido de demostración.</Sub>
           </View>
           <Switch
             accessibilityLabel="Preferencia de notificaciones"
-            value={state.notifications}
+            value={state.notifications && granted}
             disabled={busy}
             onValueChange={enabled =>
-              setNotifications(enabled).catch(error => notify(error.message))
+              toggle(enabled).catch(error => notify(error.message))
             }
             trackColor={{ true: '#1FA971', false: colors.line }}
           />
         </View>
       </Card>
+      {blocked && <Button title="Abrir ajustes de notificaciones" variant="ghost" onPress={() => Linking.openSettings().catch(() => notify('Abre los permisos de la app en Ajustes.'))} />}
+      {granted && state.notifications && <Button title="Probar notificación" variant="ghost" onPress={() => sendTravelNotice('Los avisos de viaje están activos.').catch(() => notify('No se pudo mostrar el aviso.'))} />}
       {state.fixtures.alerts.map(alert => {
         const Icon =
           alert.level === 'red'

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 [[ ${EAS_BUILD_PLATFORM:-} == android ]] || exit 0
-for url in "${EXPO_PUBLIC_API_URL:?Define la URL de Spring en Expo}" "${EXPO_PUBLIC_AI_URL:?Define la URL de APF3 en Expo}"; do
+for url in "${EXPO_PUBLIC_API_URL:?Define la URL de Spring en Expo}" "${EXPO_PUBLIC_AI_URL:?Define la URL de la API de rutas en Expo}"; do
     [[ $url == https://* ]] || { echo 'Se requieren URLs HTTPS en EAS' >&2; exit 1; }
 done
 # La imagen Android de Expo 58 incluye Java 17; preparar el mismo JDK que en local.

@@ -4,8 +4,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.util.Map;
-import java.util.Locale;
 import org.springframework.context.annotation.Profile;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -20,11 +20,18 @@ public class DemoController {
     public DemoController(DemoSessions sessions, DemoService service, AssistantService assistant) { this.sessions=sessions; this.service=service; this.assistant=assistant; }
     public record LoginInput(@Pattern(regexp="9[0-9]{8}") @NotBlank String phone,
         @NotBlank @Size(max=72) String password) {}
-    public record RegisterInput(@NotBlank @Size(max=100) String fullName,
+    public record RegisterInput(@Size(max=100) String firstName, @Size(max=100) String lastName,
+        @Size(max=100) String fullName,
         @Pattern(regexp="9[0-9]{8}") @NotBlank String phone,
         @Pattern(regexp="[0-9]{8}") @NotBlank String dni,
-        @NotBlank @Email @Size(max=254) String email,
-        @NotBlank @Size(min=10,max=72) String password) {}
+        @NotBlank @Size(max=254) String email,
+        @NotBlank @Size(min=10,max=72) String password) {
+        public RegisterInput {
+            phone = phone == null ? null : phone.strip();
+            dni = dni == null ? null : dni.strip();
+            email = email == null ? null : email.strip();
+        }
+    }
     public record ProfileInput(@NotBlank @Size(max=100) String fullName, @NotBlank @Pattern(regexp="9[0-9]{8}") String phone,
         @NotBlank @Pattern(regexp="[0-9]{8}") String dni, @NotBlank @Email @Size(max=254) String email, @PositiveOrZero long version) {}
     public record PreferencesInput(boolean notifications) {}
@@ -46,12 +53,18 @@ public class DemoController {
     }
     @PostMapping("/register")
     public Map<String,String> register(@Valid @RequestBody RegisterInput input) {
-        var account = service.register(input.fullName(), input.phone(), input.dni(),
-            input.email().trim().toLowerCase(Locale.ROOT), input.password());
+        String name = Registration.normalizedName(input.firstName(), input.lastName(), input.fullName());
+        String email = Registration.normalizedEmail(input.email());
+        Registration.validatePassword(input.password());
+        var account = service.register(name, input.phone(), input.dni(), email, input.password());
         return createSession(account.id);
     }
+    @Value("${metrolima.guest-access:false}")
+    private boolean guestAccess;
+
     @PostMapping("/sessions/presentation")
     public Map<String,String> presentationSession() {
+        if (!guestAccess) { throw new ResponseStatusException(HttpStatus.NOT_FOUND); }
         return createSession(service.presentationAccount().id);
     }
     @DeleteMapping("/sessions/current") @ResponseStatus(HttpStatus.NO_CONTENT)

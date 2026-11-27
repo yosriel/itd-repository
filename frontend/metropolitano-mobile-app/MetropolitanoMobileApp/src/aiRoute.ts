@@ -24,16 +24,7 @@ export type AiRouteResponse = {
 
 export type Scenario = 'peak' | 'offpeak';
 
-export const aiSupportedStations = [
-  'Naranjal',
-  'Izaguirre',
-  'Tomás Valle',
-  'UNI',
-  'Caquetá',
-  'Dos de Mayo',
-  'España',
-  'Estación Central',
-];
+export { stationNames as aiSupportedStations } from './stations';
 
 export function stationId(name: string): string {
   const normalized = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '');

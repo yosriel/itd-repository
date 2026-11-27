@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.JsonNode;
@@ -19,11 +20,14 @@ public class DemoService {
     private final AccountRepository accounts;
     private final RechargeRepository recharges;
     private final PasswordEncoder passwordEncoder;
+    private final BCryptPasswordEncoder legacyPasswordEncoder = new BCryptPasswordEncoder();
+    private final String absentAccountHash;
     private final JsonNode fixtures;
     public DemoService(AccountRepository accounts, RechargeRepository recharges,
         PasswordEncoder passwordEncoder, ObjectMapper mapper) throws Exception {
         this.accounts=accounts; this.recharges=recharges;
         this.passwordEncoder=passwordEncoder;
+        this.absentAccountHash = passwordEncoder.encode(UUID.randomUUID().toString());
         try (var stream = new ClassPathResource("demo/fixtures.json").getInputStream()) { fixtures=mapper.readTree(stream); }
     }
     @Transactional
@@ -47,13 +51,21 @@ public class DemoService {
         account.passwordHash = passwordEncoder.encode(password);
         return accounts.save(account);
     }
-    @Transactional(readOnly=true)
+    @Transactional
     public DemoAccount login(String phone, String password) {
         var account = accounts.findByLoginPhone(phone).orElse(null);
-        if (account == null || account.passwordHash == null
-            || !passwordEncoder.matches(password, account.passwordHash)) {
+        String storedHash = account == null ? null : account.passwordHash;
+        boolean isLegacy = storedHash != null && storedHash.startsWith("$2");
+        boolean matched = isLegacy
+            ? password.getBytes(StandardCharsets.UTF_8).length <= 72
+                && legacyPasswordEncoder.matches(password, storedHash)
+            : passwordEncoder.matches(password, storedHash == null ? absentAccountHash : storedHash);
+        if (storedHash == null || !matched) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
                 "Celular o contraseña incorrectos");
+        }
+        if (isLegacy) {
+            accounts.upgradePassword(account.id, storedHash, passwordEncoder.encode(password));
         }
         return account;
     }

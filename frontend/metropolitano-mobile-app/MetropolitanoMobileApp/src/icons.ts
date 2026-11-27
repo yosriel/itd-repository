@@ -17,3 +17,4 @@ export { default as UserRound } from 'lucide-react-native/icons/user-round';
 export { default as Wallet } from 'lucide-react-native/icons/wallet';
 export { default as X } from 'lucide-react-native/icons/x';
 export { default as MapPin } from 'lucide-react-native/icons/map-pin';
+export { default as MessageCircle } from 'lucide-react-native/icons/message-circle';

@@ -2,12 +2,12 @@ import { useFonts } from 'expo-font';
 import './global.css';
 import React from 'react';
 import { StatusBar, Text, View } from 'react-native';
-import { createNavigationContainerRef, NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import type { BottomTabNavigationOptions } from '@react-navigation/bottom-tabs';
+import type { BottomTabNavigationOptions, BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Bell, CreditCard, House, Route } from './src/icons';
+import { Bell, CreditCard, House, MessageCircle, Route } from './src/icons';
 import { AppProvider, useApp } from './src/AppProvider';
 import {
   AccountStackParams,
@@ -16,20 +16,30 @@ import {
 } from './src/navigationTypes';
 import { Auth } from './src/screens/Auth';
 import { Home, Alerts } from './src/screens/HomeAlerts';
-import { Planner, Detail } from './src/screens/Routes';
+import { PredictionPlanner, Detail } from './src/screens/Routes';
+import { RegularPlanner } from './src/screens/RegularPlanner';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Account, Profile, Settings } from './src/screens/Account';
 import { colors } from './src/ui';
 import { Assistant } from './src/Assistant';
+import { LocationProvider } from './src/DeviceLocation';
 
 const Tabs = createBottomTabNavigator<TabParams>();
 const RouteStack = createNativeStackNavigator<RoutesStackParams>();
 const AccountStack = createNativeStackNavigator<AccountStackParams>();
-const navigationRef = createNavigationContainerRef<TabParams>();
+function AssistantScreen({ navigation }: BottomTabScreenProps<TabParams, 'AssistantTab'>) {
+  return <Assistant onNavigate={tab => navigation.navigate(tab)} />;
+}
 const noHeader = { headerShown: false };
+function Planner({ navigation }: NativeStackScreenProps<RoutesStackParams, 'Planner'>) {
+  return <RegularPlanner onSimulation={() => navigation.navigate('Prediction')} />;
+}
+
 function Routes() {
   return (
     <RouteStack.Navigator screenOptions={noHeader}>
       <RouteStack.Screen name="Planner" component={Planner} />
+      <RouteStack.Screen name="Prediction" component={PredictionPlanner} />
       <RouteStack.Screen name="Detail" component={Detail} />
     </RouteStack.Navigator>
   );
@@ -57,6 +67,7 @@ function TabIcon({
     Routes: Route,
     Alerts: Bell,
     AccountTab: CreditCard,
+    AssistantTab: MessageCircle,
   }[name];
   return <Icon size={size} color={color} strokeWidth={1.8} />;
 }
@@ -66,7 +77,7 @@ function Content() {
     <View className="flex-1">
       <StatusBar barStyle="dark-content" />
       {mode ? (
-        <NavigationContainer ref={navigationRef}>
+        <LocationProvider><NavigationContainer>
           <Tabs.Navigator screenOptions={tabOptions}>
             <Tabs.Screen
               name="Home"
@@ -86,19 +97,17 @@ function Content() {
                 tabBarBadge: state.alertsRead ? undefined : 2,
               }}
             />
+            <Tabs.Screen name="AssistantTab" component={AssistantScreen} options={{ title: 'IA', tabBarHideOnKeyboard: true }} />
             <Tabs.Screen
               name="AccountTab"
               component={Accounts}
               options={{ title: 'Cuenta' }}
             />
           </Tabs.Navigator>
-        </NavigationContainer>
+        </NavigationContainer></LocationProvider>
       ) : (
         <Auth />
       )}
-      {mode && <Assistant onNavigate={tab => {
-        if (navigationRef.isReady()) { navigationRef.navigate(tab); }
-      }} />}
       {toast !== '' && (
         <View
           pointerEvents="none"

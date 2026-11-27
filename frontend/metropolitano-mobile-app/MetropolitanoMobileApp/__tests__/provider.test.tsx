@@ -29,7 +29,7 @@ test('a failed state request leaves the user signed out', async () => {
     .mockRejectedValueOnce(new Error('Servicio interrumpido'));
   try {
     await act(async () => {
-      await expect(app.loginPresentation()).rejects.toThrow('Servicio interrumpido');
+      await expect(app.login('912345678', 'ClaveSegura#123')).rejects.toThrow('Servicio interrumpido');
     });
     expect(app.mode).toBeNull();
     expect(app.state).toEqual(initialState());
@@ -63,11 +63,12 @@ test('registration creates an account and establishes a connected session', asyn
   } as Response);
   await act(async () => {
     await app.register({
-      fullName: 'Ana Torres',
+      firstName: '  Ana ',
+      lastName: ' Torres  ',
       phone: '912345678',
       dni: '12345678',
-      email: 'ana@example.test',
-      password: 'ClaveAcademica123',
+      email: ' ANA@GMAIL.COM ',
+      password: 'ClaveSegura#123',
     });
   });
   expect(app.mode).toBe('connected');
@@ -75,7 +76,7 @@ test('registration creates an account and establishes a connected session', asyn
   expect(fetchMock.mock.calls[0][0]).toContain('/register');
   expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toMatchObject({
     phone: '912345678',
-    password: 'ClaveAcademica123',
+    password: 'ClaveSegura#123',
   });
   fetchMock.mockRestore();
 });

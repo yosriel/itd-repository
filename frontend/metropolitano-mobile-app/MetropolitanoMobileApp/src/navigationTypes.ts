@@ -1,5 +1,6 @@
 export type RoutesStackParams = {
   Planner: undefined;
+  Prediction: undefined;
   Detail: { routeKey?: import('./domain').RouteKey; plan?: import('./demoTransit').DemoPlan };
 };
 export type AccountStackParams = {
@@ -12,4 +13,5 @@ export type TabParams = {
   Routes: undefined;
   Alerts: undefined;
   AccountTab: undefined;
+  AssistantTab: undefined;
 };
